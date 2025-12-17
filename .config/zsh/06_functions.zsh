@@ -6,63 +6,72 @@
 # │                        Metro System - Config Maps                          │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-# [INFO] This system separates simple file aliases from complex modules.
+# [HELPER] Find Zen Browser profile dynamically
+local zen_profile_dir
+zen_profile_dir=$(/usr/bin/find "$HOME/.zen" -maxdepth 1 -type d -name "*Default (release)" 2>/dev/null | head -n 1)
 
-# --- Part 1: Direct links to single configuration files ---
-# [CONFIG] Map of aliases to individual files.
 typeset -A metro_files
 metro_files=(
-    # --- Hyprland Module Shortcuts ---
-    [hyprconf]="$HYPR/hyprland.conf"    # Main config
-    [binds]="$HYPR/keybinds.conf"       # Keybindings
-    [rules]="$HYPR/rules.conf"          # Window rules
-    [look]="$HYPR/look.conf"            # GTK, fonts, etc.
-    [theme]="$HYPR/theme.conf"          # Theming variables
-    [lock]="$HYPR/hyprlock.conf"        # Lock screen config
+    # --- 1. Hyprland Core (System Logic) ---
+    [hyprconf]="$HYPR/hyprland.conf"                     # Main configuration entry point
+    [hyprbinds]="$HYPR/keybinds.conf"                    # Keybindings and input definitions
+    [hyprrules]="$HYPR/rules.conf"                       # Window rules and workspace assignments
+    [hyprlook]="$HYPR/look.conf"                         # Animations, blur, and decorations
+    [hyprcolors]="$HYPR/theme.conf"                      # System-wide color palette
+    [hyprlock]="$HYPR/hyprlock.conf"                     # Lock screen configuration
 
-    # --- Zsh Ecosystem ---
-    [zshenv]="$ZSH_CONFIG_DIR/01_environment.zsh"
-    [zshopts]="$ZSH_CONFIG_DIR/02_options.zsh"
-    [zshplugs]="$ZSH_CONFIG_DIR/03_plugins.zsh"
-    [zshfzf]="$ZSH_CONFIG_DIR/04_fzf.zsh"
-    [zshals]="$ZSH_CONFIG_DIR/05_aliases.zsh"
-    [zshfn]="$ZSH_CONFIG_DIR/06_functions.zsh"
-    [zshinit]="$ZSH_CONFIG_DIR/07_init.zsh"
+    # --- 2. Desktop UI (Theming & Widgets) ---
+    # > Waybar
+    [wayconf]="$DOTS/waybar/config"                      # Bar layout and modules
+    [waystyle]="$DOTS/waybar/style.css"                  # CSS styling and geometry
+    [waycolors]="$DOTS/waybar/colors.css"                # Bar-specific color variables
 
-    # --- Waybar Module Shortcuts ---
-    [waybarconf]="$DOTS/waybar/config"
-    [waybarstyle]="$DOTS/waybar/style.css"
+    # > Wofi
+    [woficonf]="$DOTS/wofi/config"                       # Launcher behavior and size
+    [wofistyle]="$DOTS/wofi/style.css"                   # Launcher CSS styling
+    [woficolors]="$DOTS/wofi/colors.css"                 # Launcher color variables
 
-    # --- Wofi Module Shortcuts ---
-    [woficonf]="$DOTS/wofi/config"
-    [wofistyle]="$DOTS/wofi/style.css"
-    
-    # --- Kitty Module Shortcuts ---
-    [kittyconf]="$DOTS/kitty/kitty.conf"
-    [kittystyle]="$DOTS/kitty/theme.conf"
+    # > Kitty
+    [kittyconf]="$DOTS/kitty/kitty.conf"                 # Terminal settings and fonts
+    [kittycolors]="$DOTS/kitty/colors.conf"              # Terminal color scheme
 
-    # --- Pyre Custom Engine ---
-    [pyre]="$HOME/.local/bin/pyre"
-    [pyrefn]="$HOME/.config/pyre/functions.sh"
+    # > Dunst
+    [dunstconf]="$DOTS/dunst/dunstrc"                    # Notification daemon config
 
-    # --- Standalone Applications ---
-    [cava]="$DOTS/cava/config"
-    [dunst]="$DOTS/dunst/dunstrc"
-    [fastfetch]="$DOTS/fastfetch/config.jsonc"
-    [gammastep]="$DOTS/gammastep/config.ini"
-    [sampler]="$DOTS/sampler/sampler.yml"
-    [imv]="$DOTS/imv/config"
-    [nvim]="$DOTS/nvim/lua/config/lazy.lua"
-    [brightness]="$HOME/.local/bin/brightness-manager"
-    [keyd]="/etc/keyd/default.conf"
-    [mise]="$DOTS/mise/config.toml"
-    [lazygit]="$DOTS/lazygit/config.yml"
+    # --- 3. Zsh Ecosystem (The Shell) ---
+    [zshrc]="$HOME/.zshrc"                               # Shell entry point
+    [zshenv]="$ZSH_CONFIG_DIR/01_environment.zsh"        # Environment variables
+    [zshopts]="$ZSH_CONFIG_DIR/02_options.zsh"           # Shell options and history
+    [zshplugs]="$ZSH_CONFIG_DIR/03_plugins.zsh"          # Plugin manager
+    [zshfzf]="$ZSH_CONFIG_DIR/04_fzf.zsh"                # FZF integration settings
+    [zshals]="$ZSH_CONFIG_DIR/05_aliases.zsh"            # Command aliases
+    [zshfn]="$ZSH_CONFIG_DIR/06_functions.zsh"           # Custom functions
+    [zshinit]="$ZSH_CONFIG_DIR/07_init.zsh"              # Initialization sequence
+    [p10k]="$HOME/.p10k.zsh"                             # Prompt styling
 
-    # --- Shell & Git ---
-    [gitig]="$HOME/.gitignore"
+    # --- 4. Applications & Tools ---
+    [gammaconf]="$DOTS/gammastep/config.ini"             # Night light / Color temperature
+    [nvim]="$DOTS/nvim/lua/config/lazy.lua"              # Neovim plugin manager
+    [fast]="$DOTS/fastfetch/config.jsonc"                # System information tool
+    [cava]="$DOTS/cava/config"                           # Audio visualizer
+    [imv]="$DOTS/imv/config"                             # Image viewer
+    [git]="$DOTS/lazygit/config.yml"                     # Git TUI interface
+    [mise]="$DOTS/mise/config.toml"                      # Runtime manager (node, python, etc)
+    [uair]="$DOTS/uair/uair.toml"                        # Pomodoro timer
+    [userjs]="${zen_profile_dir}/user.js"                # Browser hardening / config
 
-    # --- Custom ---
-    [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"
+    # --- 5. System Configs (Root/Global) ---
+    [mime]="$HOME/.config/mimeapps.list"                 # Default application associations
+    [keyd]="/etc/keyd/default.conf"                      # Low-level keyboard remapping
+    [ssh]="$HOME/.ssh/config"                            # SSH hosts and keys
+
+    # --- 6. Scripts ---
+    [pyre]="$HOME/.local/bin/pyre"                       # Custom automation engine
+    [bright]="$HOME/.local/bin/brightness-manager"       # Monitor brightness logic
+    [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"    # CPU power management
+
+    # --- 7. Meta ---
+    [gitig]="$HOME/.gitignore"                           # Global git ignore patterns
 )
 
 # --- Part 2: Links to modular configuration directories ---
@@ -77,8 +86,9 @@ metro_modules=(
 )
 
 # ┌────────────────────────────────────────────────────────────────────────────┐
-# │                        Metro System - Core Functions                       │
+# │                       Metro System - Internal Helpers                      │
 # └────────────────────────────────────────────────────────────────────────────┘
+# [INFO] Private helper functions (prefixed with _) used by the main commands.
 
 # --- _edit_resolve_path_for_preview - Helper for FZF preview ---
 # [INFO] A dedicated helper to find a path for the previewer.
@@ -93,29 +103,44 @@ _edit_resolve_path_for_preview() {
 
 # --- _edit_module - FZF sub-menu for a configuration module ---
 # [INFO] This helper function is called by 'edit' for module directories.
-# [EXAMPLE] _edit_module ~/.config/hypr
 _edit_module() {
     local module_path="$1"
     local selected_file
 
-    # [INFO] Use 'fd' to find all files within the module path, then pipe to fzf.
     selected_file=$(fd --type f . "$module_path" | fzf \
         --header="Editing Module: $(basename "$module_path") — Select a file" \
         --preview="bat --color=always --style=numbers --line-range :200 {}")
 
-    # [INFO] If a file was selected, open it in the editor.
     if [[ -n "$selected_file" ]]; then
         z "$(dirname "$selected_file")" && $EDITOR "$(basename "$selected_file")"
     fi
 }
 
+# --- _metro_completion - Zsh Autocompletion Logic ---
+# [INFO] Enables smart tab-completion for 'edit' and 'view' commands.
+_metro_completion() {
+    local -a matches
+    local key
+
+    for key in "${(@k)metro_files}"; do
+        matches+=("$key:[File] $(basename "${metro_files[$key]}")")
+    done
+
+    for key in "${(@k)metro_modules}"; do
+        matches+=("$key:[Module] $(basename "${metro_modules[$key]}")/")
+    done
+
+    matches+=("p10k:[Action] Configure Powerlevel10k")
+    _describe 'metro config' matches
+}
+
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │                       Metro System - Public Commands                       │
+# └────────────────────────────────────────────────────────────────────────────┘
+# [INFO] The main commands exposed to the user.
+
 # --- edit - The ultimate config file editor ---
-# [INFO] Intelligently edits single files or entire configuration modules.
-# [EXAMPLE] edit           # Opens the main interactive menu.
-# [EXAMPLE] edit cava      # Opens the cava config file directly.
-# [EXAMPLE] edit hypr      # Opens an FZF sub-menu for the hypr module.
 edit() {
-    # [INFO] Handle direct argument calls first.
     if [[ -n "$1" ]]; then
         local target_alias="$1"
         if [[ "$target_alias" == "p10k" ]]; then p10k configure; return 0; fi
@@ -132,12 +157,10 @@ edit() {
         return 0
     fi
 
-    # --- Interactive FZF Menu ---
     local file_list=$(for key in "${(@k)metro_files}"; do printf "%-15s [File]   -> %s\n" "$key" "$(basename "${metro_files[$key]}")"; done | sort)
     local module_list=$(for key in "${(@k)metro_modules}"; do printf "%-15s [Module] -> %s/\n" "$key" "$(basename "${metro_modules[$key]}")"; done | sort)
     local full_list="p10k           [Action] -> Configure Powerlevel10k\n${file_list}\n${module_list}"
     
-    # [FIX] Use 'typeset -f' which is the correct way to export functions in Zsh.
     local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
     local selected_item
 
@@ -159,27 +182,20 @@ edit() {
 }
 
 # --- view - Preview config files or modules ---
-# [INFO] Intelligently previews single files or entire configuration modules.
-# [EXAMPLE] view           # Opens the main interactive menu.
-# [EXAMPLE] view cava      # Shows the contents of the cava config file.
-# [EXAMPLE] view zsh       # Shows a tree view of the zsh module directory.
 view() {
-    # [INFO] Handle direct argument calls first.
     if [[ -n "$1" ]]; then
         local viewer_command="bat --paging=never"
         local target_alias="$1"
 
         if [[ "$1" == "-c" ]]; then
-            viewer_command="cat" # Uses your 'cat' alias for plain view
+            viewer_command="cat"
             shift
             target_alias="$1"
         fi
 
         if [[ -v metro_files[$target_alias] ]]; then
-            # [INFO] It's a file. Use the selected viewer.
             eval "$viewer_command \"${metro_files[$target_alias]}\""
         elif [[ -v metro_modules[$target_alias] ]]; then
-            # [INFO] It's a module. A tree view is most useful here.
             eza --tree --level=3 --icons "${metro_modules[$target_alias]}"
         else
             echo "Config not found: $target_alias"
@@ -188,7 +204,6 @@ view() {
         return 0
     fi
 
-    # --- Interactive FZF Menu ---
     local file_list=$(for key in "${(@k)metro_files}"; do printf "%-15s [File]   -> %s\n" "$key" "$(basename "${metro_files[$key]}")"; done | sort)
     local module_list=$(for key in "${(@k)metro_modules}"; do printf "%-15s [Module] -> %s/\n" "$key" "$(basename "${metro_modules[$key]}")"; done | sort)
     local full_list="p10k           [Action] -> Configure Powerlevel10k\n${file_list}\n${module_list}"
@@ -196,7 +211,6 @@ view() {
     local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
     local selected_item
 
-    # [INFO] The FZF command here is identical to the one in 'edit' for consistency.
     selected_item=$(echo -e "$full_list" | fzf \
         --header="Select a config to view" \
         --preview="$data_to_pass; \
@@ -209,7 +223,6 @@ view() {
             fi" \
         --preview-window="right:55%:border-rounded")
 
-    # [INFO] If a selection was made, call 'view' again with the chosen alias.
     if [[ -n "$selected_item" ]]; then
         view "$(echo "$selected_item" | awk '{print $1}')"
     fi
