@@ -17,6 +17,12 @@ command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 command -v atuin >/dev/null && eval "$(atuin init zsh)"
 command -v mise >/dev/null && eval "$(mise activate zsh)"
 
+# --- Metro System Wiring ---
+if type compdef &>/dev/null; then
+    compdef _metro_completion edit
+    compdef _metro_completion view
+fi
+
 # --- Custom Keybindings ---
 bindkey "^M" magic-enter
 bindkey "^J" magic-enter
