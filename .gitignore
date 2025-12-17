@@ -1,123 +1,135 @@
-# ┌───────────────────────────────────────┐
-# │            GLOBAL .GITIGNORE          │
-# └───────────────────────────────────────┘
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │                            GLOBAL GITIGNORE                                │
+# └────────────────────────────────────────────────────────────────────────────┘
+
+# ┌─── Core & temporary Files ─────────────────────────────────────────────────┐
 
 # --- Generic Patterns ---
-# [INFO] Ignore common temporary files, logs, and editor backups.
-*.bak
-*.cache
+# [INFO] Temporary files, logs, and system junk.
 *.log
 *.log.old
-*.save
-*.swp
-*~
+*.bak
+*.old
 *.tmp
-*journal*
-*lock*
+*.swp
+*.swo
+*~
+*.lock
+.DS_Store
+
+# --- Specific Exceptions ---
+# [INFO] Force track specific files that match ignore patterns above.
 !/.config/hypr/hyprlock.conf
-*socket*
 
-# ┌───────────────────────────────────────────────┐
-# │     APPLICATION DATA, CACHE & STATE FILES     │
-# └───────────────────────────────────────────────┘
-# [INFO] Ignoring user-specific data that should not be in dotfiles.
-# [INFO] This list is sorted alphabetically.
+# ┌─── Security & Secrets ─────────────────────────────────────────────────────┐
+# [CRITICAL] Never track these folders. They contain keys, passwords, or tokens.
 
-.config/arkrc
-.config/atuin/
-.config/btop/themes/
+.ssh/
+.gnupg/
 .config/Bitwarden/
-.config/dconf/
-.config/discord/
-.config/go/
-.config/gwe/
-.config/gtk-3.0/bookmarks
-.config/gtk-4.0/assets
-.config/haruna/haruna.conf
-.config/HKModInstaller/
-.config/kactivitymanagerdrc
-.config/katevirc
-.config/kde.org/
-.config/kdeglobals
-.config/knfsshare
-.config/konsolerc
-.config/konsolesshconfig
-.config/Kvantum/
-.config/kwriterc
-.config/LM Studio/
-.config/LosslessCut/
-.config/macchina/
-.config/millennium/
-.config/mimeapps.list
-.config/nwg-look/config
-.config/obs-studio/
-.config/obsidian/
-.config/obsidian_backup/
-.config/okularrc
-.config/Olympus/
-.config/pavucontrol.ini
-.config/Pinta/
+.config/keepassxc/
 .config/Proton/
-.config/pyre/                     # [INFO] Ignoring Pyre's temporary state files.
-.config/qt6ct/
-.config/QtProject.conf
-.config/qalculate/
-.config/r2modman/
-.config/r2modmanPlus-local/
-.config/ryzen-controller/
-.config/spicetify/CustomApps/
-.config/spicetify/Themes/
-.config/spotify/
-.config/Thunar/
-.config/torbrowser/
-.config/unity3d/
-.config/user-dirs.dirs
-.config/user-dirs.locale
-.config/Vencord/
-.config/vesktop/
-.config/VSCodium/
-.config/vidcutter/
-.config/viewnior/
+.config/Proton Mail/
+.config/keyd/
+*.kdbx
+
+# ┌─── System State & Cache ───────────────────────────────────────────────────┐
+# [INFO] Auto-generated files that are machine-specific or binary caches.
+
+# --- Cache & Pywal ---
+.cache/
 .config/wal/
-.config/xfce4/
-.config/xsettingsd/xsettingsd.conf
-.config/yazi/
-.config/zellij/
-
-# ┌──────────────────────────────────────────────────┐
-# │              SYSTEM & DEV INTEGRATION            │
-# └──────────────────────────────────────────────────┘
-
-# --- Development Tools ---
-.cargo/
-
-# --- System Services ---
-# [INFO] Ignoring user-level systemd symlinks.
-.config/systemd/
-
-# ┌──────────────────────────────────────────────────┐
-# │           AUTO-GENERATED & CACHE FILES           │
-# └──────────────────────────────────────────────────┘
-# [INFO] Ignoring user-specific or auto-generated configs.
-
-.config/MangoHud/
 .config/cava/shaders/
 .config/cava/themes/
-.config/cpupower_gui/
+
+# --- Desktop Environment State ---
+.config/dconf/
+.config/gtk-3.0/bookmarks
+.config/gtk-4.0/assets
+.config/mimeapps.list
+.config/user-dirs.dirs
+.config/user-dirs.locale
+.config/xsettingsd/
 .config/xdg-desktop-portal/
+.config/xfce4/
+.config/nwg-look/
 
-# --- Proton Mail Fix ---
-.config/Proton Mail/
+# --- Audio & Hardware ---
+.config/pavucontrol.ini
+.config/pulse/
+.config/ryzen-controller/
+.config/cpupower_gui/
 
-# --- Clipboard Manager (Clipse) ---
-.config/clipse/clipboard_history.json
-.config/clipse/tmp_files/
+# ┌─── Heavy Applications (Electron/Web) ──────────────────────────────────────┐
+# [INFO] Browsers, Discord, and apps with huge cache/state folders.
 
-# --- Security Apps ---
-.config/keepassxc/
+# --- Browsers ---
+.config/torbrowser/
+.config/vivaldi/
+.config/google-chrome/
+.config/chromium/
+.config/microsoft-edge*/
 
-# --- Ignored Specific Configs ---
+# --- Communication ---
+.config/discord/
+.config/vesktop/
+.config/Vencord/
+.config/Slack/
+.config/Telegram Desktop/
+
+# --- Editors (GUI) ---
+.config/Code/
+.config/VSCodium/
+.config/obsidian/
+.config/obsidian_backup/
+.config/LM Studio/
+
+# --- Media & Streaming ---
+.config/spotify/
+.config/spicetify/CustomApps/
+.config/spicetify/Themes/
 .config/spicetify/config-xpui.ini
+.config/obs-studio/
+.config/vlc/
+
+# ┌─── Development & Languages ────────────────────────────────────────────────┐
+
+.config/go/
+.cargo/
+.npm/
+.yarn/
+.bundle/
+.venv/
+__pycache__/
+node_modules/
+
+# ┌─── Games & Mods ───────────────────────────────────────────────────────────┐
+
+.config/unity3d/
+.config/r2modman/
+.config/r2modmanPlus-local/
+.config/HKModInstaller/
+.config/heroic/
+.config/lutris/
+.config/steam/
+
+# ┌─── Specific Config Exclusions ─────────────────────────────────────────────┐
+# [INFO] Configs that exist but you chose NOT to track (Machine local).
+
+.config/btop/btop.conf
+.config/fastfetch/presets/
+.config/cliphist/
+.config/clipse/
 .config/pyre/state
-.config/rustdesk/
 .config/autostart/steam.desktop
+
+# --- Full Folder Ignores ---
+# [NOTE] Check if you want to track these later.
+.config/yazi/
+.config/zellij/
+.config/arkrc
+.config/macchina/
+.config/qalculate/
+.config/thunar/
+.config/Thunar/
+.config/viewnior/
