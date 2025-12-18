@@ -12,10 +12,10 @@ MENU_STATE_FILE="$HOME/.config/pyre/main_menu_last_choice"
 
 # Paths derived from your structure
 HYPR_DIR="$HOME/.config/hypr"
-SCRIPTS_CORE="$HYPR_DIR/scripts/core"
-SCRIPTS_UTILS="$HYPR_DIR/scripts/utils"
-SCRIPTS_SHOT="$HYPR_DIR/scripts/screenshots"
-SCRIPTS_WAYBAR="$HYPR_DIR/scripts/waybar"
+SCRIPTS_DESKTOP="$HOME/.local/bin/desktop"
+SCRIPTS_UTILS="$HOME/.local/bin/utils"
+SCRIPTS_SHOT="$HOME/.local/bin/screenshots"
+SCRIPTS_WAYBAR="$HOME/.local/bin/waybar"
 ENGINE_THEMES_DIR="$HYPR_DIR/themes"
 
 # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -140,7 +140,7 @@ show_actions_menu() {
   local choice=$(printf "%b" "$options" | wofi --dmenu --prompt "Actions:" --width 300 --height 240)
 
   case "$choice" in
-  " Toggle Waybar") "$SCRIPTS_CORE/toggle_waybar.sh" ;;
+  " Toggle Waybar") "$SCRIPTS_DESKTOP/toggle_waybar.sh" ;;
   " Toggle Mic") "$SCRIPTS_UTILS/toggle_mic.sh" ;;
   "󰹴 Switch Split") "$SCRIPTS_UTILS/switch_split.sh" ;;
   "󰍽 Autoclicker (Main)") "$SCRIPTS_UTILS/autoclick_toggle.sh" ;;
@@ -150,7 +150,7 @@ show_actions_menu() {
 }
 
 show_admin_menu() {
-  kitty --class kitty-maintenance -e "$SCRIPTS_CORE/sysmenu.sh"
+  kitty --class kitty-maintenance -e "$SCRIPTS_DESKTOP/sysmenu.sh"
 }
 
 show_screenshot_type_menu() {
@@ -202,7 +202,7 @@ show_main_menu() {
     " Tools") show_tools_menu ;;
     " Actions") show_actions_menu ;;
     " Admin") show_admin_menu ;;
-    "󰒃 Powermenu") "$SCRIPTS_CORE/powermenu.sh" ;;
+    "󰒃 Powermenu") "$SCRIPTS_DESKTOP/powermenu.sh" ;;
     " Reload") reload_services ;;
     esac
   fi
