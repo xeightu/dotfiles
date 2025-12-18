@@ -6,9 +6,9 @@
 
 # --- Main Logic ---
 # [INFO] 1. Call the capture engine to get a temporary file path.
-TMP_FILE=$(~/.config/hypr/scripts/screenshots/_capture.sh)
+TMP_FILE=$(~/.local/bin/screenshots/_capture.sh)
 
 # [INFO] 2. If a file was created, pass it to the action menu.
 if [ -n "$TMP_FILE" ]; then
-  ~/.config/hypr/scripts/screenshots/action_menu.sh "$TMP_FILE"
+  ~/.local/bin/screenshots/action_menu.sh "$TMP_FILE"
 fi

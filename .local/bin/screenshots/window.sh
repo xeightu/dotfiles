@@ -16,4 +16,4 @@ GEOMETRY=$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.
 grim -g "$GEOMETRY" "$TMP_FILE"
 
 # [INFO] 3. Pass the temporary file to the action menu.
-~/.config/hypr/scripts/screenshots/action_menu.sh "$TMP_FILE"
+~/.local/bin/screenshots/action_menu.sh "$TMP_FILE"

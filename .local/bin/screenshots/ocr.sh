@@ -6,7 +6,7 @@
 
 # --- Main Logic ---
 # [INFO] 1. Call the capture engine to get a temporary file path.
-TMP_FILE=$(~/.config/hypr/scripts/screenshots/_capture.sh)
+TMP_FILE=$(~/.local/bin/screenshots/_capture.sh)
 trap 'rm -f "$TMP_FILE"' EXIT # [FIX] Ensure the temp file is deleted even if OCR fails.
 
 # [INFO] 2. If a file was created, process it.
