@@ -2,14 +2,36 @@
 # │                                6. Functions                                │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                        Metro System - Config Maps                          │
+# ┌─── Metro System - Config Maps ─────────────────────────────────────────────┐
+# │                                                                            │
+# │  [INFO] Centralized registry for dotfiles navigation.                      │
+# │  [NOTE] Defines targets for 'edit' and 'view' commands.                    │
+# │                                                                            │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-# [HELPER] Find Zen Browser profile dynamically
+
+# ┌─── Configuration Data ─────────────────────────────────────────────────────┐
+
+# --- Dynamic Variables ---
+# [HELPER] Resolve paths dynamically to avoid hardcoding.
 local zen_profile_dir
 zen_profile_dir=$(/usr/bin/find "$HOME/.zen" -maxdepth 1 -type d -name "*Default (release)" 2>/dev/null | head -n 1)
+local BIN="$HOME/.local/bin"
 
+# --- Modules (Folders) ---
+# [INFO] Directories opened via file picker (edit) or tree view (view).
+typeset -A metro_modules
+metro_modules=(
+    [hypr]="$HYPR"
+    [kitty]="$DOTS/kitty"
+    [waybar]="$DOTS/waybar"
+    [wofi]="$DOTS/wofi"
+    [zsh]="$ZSH_CONFIG_DIR"
+    [scripts]="$BIN"
+)
+
+# --- Files (Direct Access) ---
+# [INFO] Specific files opened directly in the editor.
 typeset -A metro_files
 metro_files=(
     # --- 1. Hyprland Core (System Logic) ---
@@ -21,21 +43,14 @@ metro_files=(
     [hyprlock]="$HYPR/hyprlock.conf"                     # Lock screen configuration
 
     # --- 2. Desktop UI (Theming & Widgets) ---
-    # > Waybar
     [wayconf]="$DOTS/waybar/config"                      # Bar layout and modules
     [waystyle]="$DOTS/waybar/style.css"                  # CSS styling and geometry
     [waycolors]="$DOTS/waybar/colors.css"                # Bar-specific color variables
-
-    # > Wofi
     [woficonf]="$DOTS/wofi/config"                       # Launcher behavior and size
     [wofistyle]="$DOTS/wofi/style.css"                   # Launcher CSS styling
     [woficolors]="$DOTS/wofi/colors.css"                 # Launcher color variables
-
-    # > Kitty
     [kittyconf]="$DOTS/kitty/kitty.conf"                 # Terminal settings and fonts
     [kittycolors]="$DOTS/kitty/colors.conf"              # Terminal color scheme
-
-    # > Dunst
     [dunstconf]="$DOTS/dunst/dunstrc"                    # Notification daemon config
 
     # --- 3. Zsh Ecosystem (The Shell) ---
@@ -50,15 +65,15 @@ metro_files=(
     [p10k]="$HOME/.p10k.zsh"                             # Prompt styling
 
     # --- 4. Applications & Tools ---
-    [gammaconf]="$DOTS/gammastep/config.ini"             # Night light / Color temperature
+    [gammaconf]="$DOTS/gammastep/config.ini"             # Night light configuration
     [nvim]="$DOTS/nvim/lua/config/lazy.lua"              # Neovim plugin manager
     [fast]="$DOTS/fastfetch/config.jsonc"                # System information tool
     [cava]="$DOTS/cava/config"                           # Audio visualizer
     [imv]="$DOTS/imv/config"                             # Image viewer
     [git]="$DOTS/lazygit/config.yml"                     # Git TUI interface
-    [mise]="$DOTS/mise/config.toml"                      # Runtime manager (node, python, etc)
+    [mise]="$DOTS/mise/config.toml"                      # Runtime manager config
     [uair]="$DOTS/uair/uair.toml"                        # Pomodoro timer
-    [userjs]="${zen_profile_dir}/user.js"                # Browser hardening / config
+    [userjs]="${zen_profile_dir}/user.js"                # Browser hardening config
 
     # --- 5. System Configs (Root/Global) ---
     [mime]="$HOME/.config/mimeapps.list"                 # Default application associations
@@ -66,32 +81,19 @@ metro_files=(
     [ssh]="$HOME/.ssh/config"                            # SSH hosts and keys
 
     # --- 6. Scripts ---
-    [pyre]="$HOME/.local/bin/pyre"                       # Custom automation engine
-    [bright]="$HOME/.local/bin/brightness-manager"       # Monitor brightness logic
+    [pyre]="$BIN/pyre"                                   # Engine entry point
+    [pyrefn]="$HOME/.config/pyre/functions.sh"           # Engine library functions
+    [bright]="$BIN/brightness-manager"                   # Monitor brightness logic
     [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"    # CPU power management
 
     # --- 7. Meta ---
     [gitig]="$HOME/.gitignore"                           # Global git ignore patterns
 )
 
-# --- Part 2: Links to modular configuration directories ---
-# [CONFIG] Map of aliases to directories for full module browsing.
-typeset -A metro_modules
-metro_modules=(
-    [hypr]="$HYPR"
-    [kitty]="$DOTS/kitty"
-    [waybar]="$DOTS/waybar"
-    [wofi]="$DOTS/wofi"
-    [zsh]="$ZSH_CONFIG_DIR"
-)
+# ┌─── Internal Helpers ───────────────────────────────────────────────────────┐
 
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                       Metro System - Internal Helpers                      │
-# └────────────────────────────────────────────────────────────────────────────┘
-# [INFO] Private helper functions (prefixed with _) used by the main commands.
-
-# --- _edit_resolve_path_for_preview - Helper for FZF preview ---
-# [INFO] A dedicated helper to find a path for the previewer.
+# --- Path Resolution ---
+# [INFO] Helper for FZF preview: turns an alias into a real path.
 _edit_resolve_path_for_preview() {
     local alias="$1"
     if [[ -v metro_files[$alias] ]]; then
@@ -101,23 +103,23 @@ _edit_resolve_path_for_preview() {
     fi
 }
 
-# --- _edit_module - FZF sub-menu for a configuration module ---
-# [INFO] This helper function is called by 'edit' for module directories.
+# --- Module Selector ---
+# [INFO] Helper for 'edit': shows FZF menu for a specific folder.
 _edit_module() {
     local module_path="$1"
     local selected_file
 
-    selected_file=$(fd --type f . "$module_path" | fzf \
-        --header="Editing Module: $(basename "$module_path") — Select a file" \
-        --preview="bat --color=always --style=numbers --line-range :200 {}")
+    selected_file=$(find "$module_path" -maxdepth 2 -not -path '*/.*' -type f | \
+        fzf --header="Editing Module: $(basename "$module_path") — Select a file" \
+            --preview="bat --color=always --style=numbers --line-range :200 {}")
 
     if [[ -n "$selected_file" ]]; then
         z "$(dirname "$selected_file")" && $EDITOR "$(basename "$selected_file")"
     fi
 }
 
-# --- _metro_completion - Zsh Autocompletion Logic ---
-# [INFO] Enables smart tab-completion for 'edit' and 'view' commands.
+# --- Autocompletion ---
+# [INFO] Zsh completion logic for public commands.
 _metro_completion() {
     local -a matches
     local key
@@ -134,12 +136,11 @@ _metro_completion() {
     _describe 'metro config' matches
 }
 
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                       Metro System - Public Commands                       │
-# └────────────────────────────────────────────────────────────────────────────┘
-# [INFO] The main commands exposed to the user.
 
-# --- edit - The ultimate config file editor ---
+# ┌─── Public Commands ────────────────────────────────────────────────────────┐
+
+# --- Editor Interface ---
+# [INFO] The ultimate config file editor.
 edit() {
     if [[ -n "$1" ]]; then
         local target_alias="$1"
@@ -157,10 +158,12 @@ edit() {
         return 0
     fi
 
+    # Generate lists
     local file_list=$(for key in "${(@k)metro_files}"; do printf "%-15s [File]   -> %s\n" "$key" "$(basename "${metro_files[$key]}")"; done | sort)
     local module_list=$(for key in "${(@k)metro_modules}"; do printf "%-15s [Module] -> %s/\n" "$key" "$(basename "${metro_modules[$key]}")"; done | sort)
     local full_list="p10k           [Action] -> Configure Powerlevel10k\n${file_list}\n${module_list}"
     
+    # Serialize data for FZF preview
     local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
     local selected_item
 
@@ -181,10 +184,11 @@ edit() {
     fi
 }
 
-# --- view - Preview config files or modules ---
+# --- Viewer Interface ---
+# [INFO] Preview config files or modules.
 view() {
     if [[ -n "$1" ]]; then
-        local viewer_command="bat --paging=never"
+        local viewer_command="bat --paging=never --style=header,grid,numbers --color=always"
         local target_alias="$1"
 
         if [[ "$1" == "-c" ]]; then
@@ -196,7 +200,7 @@ view() {
         if [[ -v metro_files[$target_alias] ]]; then
             eval "$viewer_command \"${metro_files[$target_alias]}\""
         elif [[ -v metro_modules[$target_alias] ]]; then
-            eza --tree --level=3 --icons "${metro_modules[$target_alias]}"
+            eza --tree --level=5 --icons "${metro_modules[$target_alias]}"
         else
             echo "Config not found: $target_alias"
             return 1
@@ -204,6 +208,7 @@ view() {
         return 0
     fi
 
+    # Interactive mode (same as edit but calls view)
     local file_list=$(for key in "${(@k)metro_files}"; do printf "%-15s [File]   -> %s\n" "$key" "$(basename "${metro_files[$key]}")"; done | sort)
     local module_list=$(for key in "${(@k)metro_modules}"; do printf "%-15s [Module] -> %s/\n" "$key" "$(basename "${metro_modules[$key]}")"; done | sort)
     local full_list="p10k           [Action] -> Configure Powerlevel10k\n${file_list}\n${module_list}"
@@ -228,9 +233,17 @@ view() {
     fi
 }
 
+
 # ┌────────────────────────────────────────────────────────────────────────────┐
-# │                             Magic Enter                                    │
+# │                       Interactive Shell Enhancements                       │
 # └────────────────────────────────────────────────────────────────────────────┘
+
+
+# ┌─── Navigation Helpers ─────────────────────────────────────────────────────┐
+
+# --- Magic Enter ---
+# [INFO] Runs 'eza' (ls) when pressing Enter on an empty line.
+# [INFO] Shows 'git status' if inside a git repository.
 magic-enter() {
     if [[ -z "${BUFFER// }" ]]; then
         local cmd="eza --icons --group-directories-first --git"
@@ -245,68 +258,38 @@ magic-enter() {
         zle accept-line
     fi
 }
-
 zle -N magic-enter
 
-
-# --- dotgit - Wrapper for dotfiles management ---
-dotgit() {
-    git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
-}
-
 # --- Project Jumper ---
+# [INFO] Find directories containing .git and jump to them.
 pj() {
+    local search_dirs=("$HOME/Projects" "$HOME/Documents" "$DOTS" "$HOME/.config")
     local project_dir
     
-    project_dir=$(fd --type d --hidden --glob ".git" \
-        "$HOME/Projects" "$HOME/Documents" "$DOTS" "$HOME/.config" \
+    project_dir=$(fd --type d --hidden --glob ".git" "${search_dirs[@]}" \
         --exec dirname {} \; | \
         sed "s|$HOME|~|" | \
-        fzf --height=50% --layout=reverse --border --prompt="Project> " \
+        fzf --height=50% --layout=reverse --border --prompt="Project > " \
             --preview="eza --tree --level=2 --icons --git-ignore $(echo {} | sed "s|~|$HOME|")" \
             --preview-window=right:60%)
 
     if [[ -n "$project_dir" ]]; then
-        local real_path=$(echo "$project_dir" | sed "s|~|$HOME|")
+        local real_path="${project_dir/#\~/$HOME}"
         z "$real_path"
     fi
 }
 
-# --- cht - Cheat Sheet Seeker ---
-cht() {
-    if [ "$#" -eq 0 ]; then
-        echo "Usage: cht <language> <question>"
-        echo "Example: cht python read file"
-        return 1
-    fi
-
-    local lang=$1
-    shift
-    local query=$(echo "$*" | tr ' ' '+')
-
-    if command -v bat > /dev/null; then
-        curl -s "cht.sh/$lang/$query?T" | bat --language="$lang" --style=plain
-    else
-        curl -s "cht.sh/$lang/$query"
-    fi
+# --- Make & Enter ---
+# [INFO] Create a directory and cd into it immediately.
+mkcd() {
+    mkdir -p "$1" && cd "$1"
 }
 
-# --- dfd - Audit untracked configuration files ---
-dfd() {
-    local untracked_files
-    untracked_files=$(dotgit ls-files --others --exclude-standard -- ~/.config ~/.local/bin ~/.zshrc ~/.p10k.zsh)
 
-    if [ -n "$untracked_files" ]; then
-        echo "┌─ [CRITICAL] Untracked Dotfiles ──────────────────────────────────┐"
-        echo "$untracked_files" | sed 's/^/│  /;$s/│/└/'
-        echo "└────────────────────────────────────────────────────────────────┘"
-        echo "  Use 'dadd <path>' to add them."
-    else
-        echo "All dotfiles are tracked."
-    fi
-}
+# ┌─── Development Tools ──────────────────────────────────────────────────────┐
 
-# --- Ripgrep Fzf - Search for a pattern across the entire project ---
+# --- Ripgrep Fzf ---
+# [INFO] Interactive grep across the entire project.
 rf() {
     local editor=${2:-${EDITOR:-nvim}}
     local selection
@@ -328,52 +311,74 @@ rf() {
     "$editor" +"$line" "$file"
 }
 
-# --- Find Inside - Interactively fuzzy-search within a single file ---
+# --- Find Inside ---
+# [INFO] Interactive fuzzy-search within a specific file.
 fin() {
     if [[ -z "$1" ]]; then
         echo "Usage: fin <filename>"
-        echo "  Opens an fzf-powered view for interactive fuzzy-searching within a file."
         return 1
     fi
 
     local file="$1"
-    if [[ ! -f "$file" ]]; then
-        echo "Error: File not found: $file"
-        return 1
-    fi
+    [[ ! -f "$file" ]] && { echo "Error: File not found: $file"; return 1; }
 
     local selection
-    
     selection=$(rg --no-heading --line-number --color=always -i "" "$file" | fzf \
         --ansi \
         --delimiter=: \
-        --header="🔍 $file — Fuzzy-search, Enter → open, ESC → cancel" \
+        --header="🔍 $file — Fuzzy-search" \
         --height=30% \
         --layout=reverse \
         --border=rounded \
         --preview-window="right:50%:wrap:border-rounded:follow" \
         --preview="bash -c ' \
-            file_path=\"\$1\"; \
-            line_num=\"{1}\"; \
-            start=\$(( line_num > 10 ? line_num - 10 : 1 )); \
-            end=\$(( line_num + 10 )); \
-            bat --paging=never --style=numbers --color=always --highlight-line \"\$line_num\" \"\$file_path\" --line-range \"\$start:\$end\" \
-        ' bash \"$file\"")
+            file=\"$file\"; line={1}; \
+            start=\$(( line > 10 ? line - 10 : 1 )); \
+            end=\$(( line + 10 )); \
+            bat --paging=never --style=numbers --color=always --highlight-line \$line \$file --line-range \$start:\$end \
+        '")
 
-    if [[ $? -ne 0 || -z "$selection" ]]; then
-        return 0
-    fi
-
-    local line=$(echo "$selection" | awk -F: '{print $1}' | head -n1)
-
+    [[ -z "$selection" ]] && return 0
+    
+    local line=$(echo "$selection" | awk -F: '{print $1}')
     ${EDITOR:-nvim} +"$line" "$file"
 }
 
-# --- Fuzzy Kill - Find and kill processes interactively ---
+# --- Cheat Sheet ---
+# [INFO] Query cht.sh for code snippets.
+cht() {
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: cht <language> <question>"
+        return 1
+    fi
+
+    local lang=$1
+    shift
+    local query=$(echo "$*" | tr ' ' '+')
+
+    if command -v bat >/dev/null; then
+        curl -s "cht.sh/$lang/$query?T" | bat --language="$lang" --style=plain
+    else
+        curl -s "cht.sh/$lang/$query"
+    fi
+}
+
+# --- Web Server ---
+# [INFO] Serve current directory via Python.
+serve() {
+    echo "Serving current directory on http://localhost:8000"
+    python -m http.server
+}
+
+
+# ┌─── System Utilities ───────────────────────────────────────────────────────┐
+
+# --- Fuzzy Kill ---
+# [INFO] Interactively select and kill processes.
 fk() {
     local pid
     if [[ -n "$1" ]]; then
-        pid=$(pgrep -f "$1" | fzf --preview="ps -fp {}" --header="Select PID to kill (matches '$1')")
+        pid=$(pgrep -f "$1" | fzf --preview="ps -fp {}" --header="Kill matches for '$1'")
     else
         pid=$(ps -u "$USER" -o pid,comm,args | sed 1d | fzf \
             --header="Select process to kill" \
@@ -388,7 +393,15 @@ fk() {
     fi
 }
 
-# --- copy - Copy piped input to the system clipboard ---
+# --- Backup File ---
+# [INFO] Create a timestamped backup (file.bak.YYYYMMDD...)
+bak() {
+    [[ -z "$1" ]] && { echo "Usage: bak <filename>"; return 1; }
+    cp -iv "$1" "$1.bak.$(date +'%Y%m%d-%H%M%S')"
+}
+
+# --- Clipboard Copy ---
+# [INFO] Wayland-native clipboard copy.
 copy() {
     if command -v wl-copy >/dev/null 2>&1; then
         wl-copy
@@ -398,33 +411,41 @@ copy() {
     fi
 }
 
-# --- Git Scan - Git status for all repos in current dir ---
+
+# ┌─── Dotfiles Management ────────────────────────────────────────────────────┐
+
+# --- Git Wrapper ---
+# [INFO] Wrapper for the bare dotfiles repository.
+dotgit() {
+    git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
+}
+
+# --- Dotfiles Doctor ---
+# [INFO] Scans key directories for files not tracked by dotgit.
+dfd() {
+    local untracked_files
+    # Added .local/bin to scan list
+    untracked_files=$(dotgit ls-files --others --exclude-standard -- \
+        "$HOME/.config" "$HOME/.local/bin" "$HOME/.zshrc" "$HOME/.p10k.zsh")
+
+    if [ -n "$untracked_files" ]; then
+        echo "┌─ [CRITICAL] Untracked Dotfiles ──────────────────────────────────┐"
+        echo "$untracked_files" | sed 's/^/│  /;$s/│/└/'
+        echo "└────────────────────────────────────────────────────────────────┘"
+        echo "  Use 'dadd <path>' to add them."
+    else
+        echo "All dotfiles are tracked."
+    fi
+}
+
+# --- Git Repo Scan ---
+# [INFO] Show status of all git repositories in current directory.
 gscan() {
     fd --type d --hidden --absolute-path '.git' --max-depth 2 . | while read -r gitdir; do
         local projectdir=$(dirname "$gitdir")
         if [[ "$projectdir" == *".git"* ]]; then continue; fi
         
-        echo "\n--- Status for: $(basename "$projectdir") ---"
+        printf "\n--- Status for: %s ---\n" "$(basename "$projectdir")"
         git -C "$projectdir" status -s
     done
-}
-
-# --- serve - Start a simple web server ---
-serve() {
-    echo "Serving current directory on http://localhost:8000"
-    python -m http.server
-}
-
-# --- bak - Create a timestamped backup of a file ---
-bak() {
-    if [[ -z "$1" ]]; then
-        echo "Usage: bak <filename>"
-        return 1
-    fi
-    cp -iv "$1" "$1.bak.$(date +'%Y%m%d-%H%M%S')"
-}
-
-# --- mkcd - Create a directory and enter it ---
-mkcd() {
-    mkdir -p "$1" && z "$1"
 }
