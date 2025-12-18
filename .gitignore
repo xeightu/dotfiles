@@ -116,6 +116,7 @@ node_modules/
 # ┌─── Specific Config Exclusions ─────────────────────────────────────────────┐
 # [INFO] Configs that exist but you chose NOT to track (Machine local).
 
+.config/pyre/main_menu_last_choice
 .config/btop/btop.conf
 .config/fastfetch/presets/
 .config/cliphist/
