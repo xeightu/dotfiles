@@ -3,7 +3,7 @@
 /* └────────────────────────────────────────────────────────────────────────────┘ */
 
 /* --- Theme Import --- */
-@import "theme.css";                    /* [INFO] Load the centralized color palette. */
+@import "colors.css";                    /* [INFO] Load the centralized color palette. */
 
 /* ┌────────────────────────────────────────────────────────────────────────────┐ */
 /* │                               GLOBAL STYLES                                │ */
@@ -33,15 +33,15 @@ window#waybar {
 /* │                           GENERAL MODULE STYLES                            │ */
 /* └────────────────────────────────────────────────────────────────────────────┘ */
 
-#custom-updates,
 #workspaces,
-#custom-power,
 #custom-window,
-#clock,
-#network,
 #mpris,
 #language,
+#custom-pomodoro,
+#clock,
 #custom-dunst,
+#custom-updates,
+#network,
 #pulseaudio,
 #battery,
 #tray {
@@ -179,6 +179,7 @@ window#waybar {
 /* --- System Status --- */
 #battery                { color: @green; }
 #custom-dunst           { color: @peach; }
+#custom-pomodoro        { color: @rosewater; }
 
 /* --- Status Specifics --- */
 #pulseaudio.muted       { color: @overlay0; opacity: 0.6; }

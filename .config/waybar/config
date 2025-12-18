@@ -19,6 +19,7 @@
     ],
     "modules-center": [
         "hyprland/language",
+        "custom/pomodoro",
         "clock",
         "custom/dunst"
     ],
@@ -59,7 +60,7 @@
     // --- Custom Window Title ---
     "custom/window": {
         // [INFO] This module is controlled by custom script.
-        "exec": "~/.config/hypr/scripts/waybar/window_title.sh",
+        "exec": "~/.local/bin/waybar/window_title.sh",
         "return-type": "json",
         "format": "{}",
         "max-length": 100
@@ -94,6 +95,15 @@
         "on-click": "hyprctl switchxkblayout at-translated-set-2-keyboard next"
     },
 
+    // --- Pomodoro (Uair) ---
+    "custom/pomodoro": {
+        "format": "{}",
+        "exec": "uair",
+        "on-click": "uairctl toggle",
+        "on-click-right": "uairctl next",
+        "tooltip": false
+    },
+
     // --- Clock Module ---
     "clock": {
         "interval": 1,
@@ -123,7 +133,7 @@
     "custom/dunst": {
         "format": " {}",
         "exec": "dunstctl count waiting",
-        "on-click": "kitty --class kitty-notif -e ~/.config/hypr/scripts/utils/notif_history.sh",
+        "on-click": "kitty --class kitty-notif -e ~/.local/bin/utils/notif_history.sh",
         "on-click-right": "dunstctl close-all",
         "interval": 2,
         "tooltip": true
@@ -135,12 +145,12 @@
 
     // --- Package Updates ---
     "custom/updates": {
-        "exec":     "~/.config/hypr/scripts/waybar/updates.sh",
+        "exec":     "~/.local/bin/waybar/updates.sh",
         "interval": 900,                                                              // [CONFIG] Check for updates every 15 minutes.
         "return-type": "json",
-        "format":   "{}",                                                             // [CRITICAL] Must be set to parse JSON from the exec script.
+        "format":   "{}",
         "tooltip":  true,
-        "on-click": "kitty --class kitty-update -e ~/.config/hypr/scripts/core/sysup.sh"
+        "on-click": "kitty --class kitty-update -e ~/.local/bin/desktop/sysup.sh"
     },
 
     // --- CPU Module ---
@@ -159,7 +169,7 @@
     // --- Temperature Module ---
     "custom/temperature": {
         // [INFO] Uses the smart detection script we wrote.
-        "exec":         "~/.config/hypr/scripts/waybar/temperature.sh",
+        "exec":         "~/.local/bin/waybar/temperature.sh",
         "return-type":  "json",
         "interval":     3,
         "tooltip":      true
