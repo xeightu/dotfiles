@@ -1,0 +1,8 @@
+[Unit]
+Description=Auto Brightness Manager
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/brightness-manager
+Nice=10

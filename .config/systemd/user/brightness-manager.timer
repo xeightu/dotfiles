@@ -1,0 +1,10 @@
+[Unit]
+Description=Run brightness manager periodically
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+Persistent=false
+
+[Install]
+WantedBy=timers.target
