@@ -1,125 +1,45 @@
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                          SAMPLER - MAIN DASHBOARD                          │
-# └────────────────────────────────────────────────────────────────────────────┘
-
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                                  CHARTS                                    │
-# └────────────────────────────────────────────────────────────────────────────┘
+variables:
+    latency: ping -c 1 8.8.8.8 | grep 'time=' | awk -F 'time=' '{print $2}' | awk
+        '{print $1}' | cut -d. -f1
 runcharts:
-  - title: Search engine response time
-    position: [[0, 0], [44, 19]]
-    rate-ms: 2000
-    triggers:
-      - title: Latency threshold exceeded
-        condition: echo "$cur > 0.8" | bc -l
-        actions:
-            terminal-bell: true
-            visual: true
+  - title: Latency to Prod (ms)
+    position: [[0, 1], [39, 32]]
+    rate-ms: 1000
     legend:
         enabled: true
         details: false
+    scale: 2
     items:
-      - label: GOOGLE
-        sample: curl --retry 2 --max-time 5 -o /dev/null -s -w '%{time_total}' https://www.google.com
-      - label: DUCKDUCKGO
-        sample: curl --retry 2 --max-time 5 -o /dev/null -s -w '%{time_total}' https://www.duckduckgo.com
-
-barcharts:
-  - title: Local network activity
-    position: [[45, 25], [35, 7]]
-    rate-ms: 1000
-    items:
-      - label: Bytes in
-        sample: awk '/eth|enp|wlan/ {sum += $2} END {print sum}' /proc/net/dev
-      - label: Bytes out
-        sample: awk '/eth|enp|wlan/ {sum += $10} END {print sum}' /proc/net/dev
-
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                                  WIDGETS                                   │
-# └────────────────────────────────────────────────────────────────────────────┘
-gauges:
-  - title: Year progress
-    position: [[45, 0], [35, 2]]
-    rate-ms: 3600000
-    cur:
-        sample: date +%j
-    max:
-        sample: echo 365
-    min:
-        sample: echo 0
-  - title: Month progress
-    position: [[45, 3], [35, 2]]
-    rate-ms: 3600000
-    cur:
-        sample: date +%m
-    max:
-        sample: echo 12
-    min:
-        sample: echo 0
-  - title: Day progress
-    position: [[45, 6], [35, 2]]
-    rate-ms: 3600000
-    cur:
-        sample: date +%d
-    max:
-        sample: echo 31
-    min:
-        sample: echo 0
-  - title: Hour progress
-    position: [[45, 9], [35, 2]]
-    rate-ms: 1000
-    cur:
-        sample: date +%H
-    max:
-        sample: echo 24
-    min:
-        sample: echo 0
-  - title: Minute progress
-    position: [[45, 12], [35, 2]]
-    rate-ms: 500
-    triggers:
-      - title: CLOCK BELL EVERY MINUTE
-        condition: '[ $label == "cur" ] && [ $cur -eq 0 ] && echo 1 || echo 0'
-        actions:
-            terminal-bell: true
-    cur:
-        sample: date +%S
-    max:
-        sample: echo 60
-    min:
-        sample: echo 0
-
-sparklines:
-  - title: CPU usage
-    position: [[0, 20], [21, 8]]
-    rate-ms: 1000
-    sample: top -bn1 | grep 'Cpu(s)' | sed 's/.*, *\([0-9.]*\)%* id.*/\1/' | awk '{print
-        100 - $1}'
-  - title: Free memory (MB)
-    position: [[22, 20], [22, 8]]
+      - label: AWS/Prod
+        color: 2
+        sample: ping -c 1 8.8.8.8 | grep 'time=' | awk -F 'time=' '{print $2}' | awk
+            '{print $1}'
+      - label: Local Gateway
+        color: 4
+        sample: ping -c 1 192.168.1.1 | grep 'time=' | awk -F 'time=' '{print $2}'
+            | awk '{print $1}'
+  - title: Errors in Log (Last 1m)
+    position: [[41, 1], [39, 32]]
     rate-ms: 2000
-    sample: free -m | awk 'NR==2{printf "%d", $4}'
-
+    items:
+      - label: Nginx 500s
+        color: 1
+        sample: tail -n 100 /var/log/syslog | grep -i 'error' | wc -l
+sparklines:
+  - title: TODOs in Project
+    position: [[41, 37], [39, 4]]
+    rate-ms: 10000
+    sample: grep -r 'TODO' . 2>/dev/null | wc -l
+  - title: Active DB Conns
+    position: [[41, 33], [39, 3]]
+    rate-ms: 2000
+    sample: ss -antp | grep ':5432' | grep 'ESTAB' | wc -l
 textboxes:
-  - title: Docker containers stats
-    position: [[0, 28], [44, 12]]
+  - title: Infrastructure Health
+    position: [[0, 33], [39, 8]]
     rate-ms: 5000
-    sample: docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.PIDs}}"
-  - title: Local weather
-    position: [[45, 32], [17, 8]]
-    rate-ms: 900000
-    sample: curl wttr.in?0ATQF
-    border: true
-  - title: New York weather
-    position: [[62, 32], [18, 8]]
-    rate-ms: 900000
-    sample: curl wttr.in/newyork?0ATQF
-    border: true
-
-asciiboxes:
-  - title: UTC time
-    position: [[45, 15], [35, 9]]
-    rate-ms: 500
-    sample: env TZ=UTC date +'%T'
-    border: true
-    font: 3d
+    sample: "echo \"Redis:   $(docker ps | grep redis > /dev/null && echo '\U0001F7E2
+        UP' || echo '\U0001F534 DOWN')\"\necho \"Postgres:$(docker ps | grep postgres
+        > /dev/null && echo '\U0001F7E2 UP' || echo '\U0001F534 DOWN')\"\necho \"Nginx:
+        \  $(systemctl is-active nginx > /dev/null 2>&1 && echo '\U0001F7E2 UP' ||
+        echo '\U0001F534 DOWN')\"\n"
