@@ -1,55 +1,70 @@
+# ┌─── Uair Configuration ─────────────────────────────────────────────────────┐
+
 [defaults]
-format = "{name}  {time}\n"
+# [OPTIMIZATION] Output JSON for Waybar dynamic styling
+format = "{ \"text\": \"{name}  {time}\", \"class\": \"{id}\" }\n"
 time_format = "%M:%S"
 
-# ================= ЦИКЛ 1 =================
+
+# --- Cycle 1 ------------------------------------------------------------------
+
 [[sessions]]
-id = "work1"  # <--- Уникальный ID
+id       = "work1"
 duration = "25m"
-name = "󰄉"
-command = "notify-send -u critical 'Work 1 Done' 'Take a break!'"
+name     = "󰄉"
+command  = "notify-send -u critical -i clock 'Focus Complete' 'Take 5 minutes.'"
 
 [[sessions]]
-id = "rest1"
+id       = "rest1"
 duration = "5m"
-name = "󰅶"
-command = "notify-send 'Break 1 Done' 'Back to work!'"
+name     = "󰅶"
+command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-# ================= ЦИКЛ 2 =================
+
+# --- Cycle 2 ------------------------------------------------------------------
+
 [[sessions]]
-id = "work2"
+id       = "work2"
 duration = "25m"
-name = "󰄉"
-command = "notify-send -u critical 'Work 2 Done' 'Take a break!'"
+name     = "󰄉"
+command  = "notify-send -u critical -i clock 'Focus Complete' 'Take 5 minutes.'"
 
 [[sessions]]
-id = "rest2"
+id       = "rest2"
 duration = "5m"
-name = "󰅶"
-command = "notify-send 'Break 2 Done' 'Back to work!'"
+name     = "󰅶"
+command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-# ================= ЦИКЛ 3 =================
+
+# --- Cycle 3 ------------------------------------------------------------------
+
 [[sessions]]
-id = "work3"
+id       = "work3"
 duration = "25m"
-name = "󰄉"
-command = "notify-send -u critical 'Work 3 Done' 'Take a break!'"
+name     = "󰄉"
+command  = "notify-send -u critical -i clock 'Focus Complete' 'Take 5 minutes.'"
 
 [[sessions]]
-id = "rest3"
+id       = "rest3"
 duration = "5m"
-name = "󰅶"
-command = "notify-send 'Break 3 Done' 'Back to work!'"
+name     = "󰅶"
+command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-# ================= ЦИКЛ 4 =================
+
+# --- Cycle 4 (Final) ----------------------------------------------------------
+
 [[sessions]]
-id = "work4"
+id       = "work4"
 duration = "25m"
-name = "󰄉"
-command = "notify-send -u critical 'Work 4 Done' 'Take a break!'"
+name     = "󰄉"
+command  = "notify-send -u critical -i clock 'Cycle Complete' 'Earned a Long Break.'"
+
+
+# --- Long Break ---------------------------------------------------------------
 
 [[sessions]]
-id = "rest4"
-duration = "5m"
-name = "󰅶"
-command = "notify-send 'Break 4 Done' 'Back to work!'"
+# [INFO] Standard Pomodoro long break (15-30m)
+id       = "long_rest"
+duration = "20m"
+name     = "󰤁"
+command  = "notify-send -u critical -i software-update-available 'Long Break Over' 'Starting new cycle.'"

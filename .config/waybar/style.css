@@ -156,6 +156,47 @@ window#waybar {
     }
 }
 
+/* [STYLE] Calm breathing animation for Long Breaks */
+@keyframes breathe {
+    0%   { background-color: @base; }
+    50%  { background-color: alpha(@sapphire, 0.3); } /* Soft Blue Pulse */
+    100% { background-color: @base; }
+}
+
+/* ┌────────────────────────────────────────────────────────────────────────────┐ */
+/* │                              POMODORO MODULE                               │ */
+/* └────────────────────────────────────────────────────────────────────────────┘ */
+
+#custom-pomodoro {
+    color: @rosewater;                  /* [INFO] Fallback/Idle color. */
+}
+
+/* --- Work Cycles (Focus) --- */
+#custom-pomodoro.work1,
+#custom-pomodoro.work2,
+#custom-pomodoro.work3,
+#custom-pomodoro.work4 {
+    color: @red;
+    border-color: @red;                 /* [STYLE] Visual urgency for work. */
+}
+
+/* --- Rest Cycles (Break) --- */
+#custom-pomodoro.rest1,
+#custom-pomodoro.rest2,
+#custom-pomodoro.rest3,
+#custom-pomodoro.rest4 {
+    color: @green;
+    border-color: @green;
+}
+
+/* --- Long Break --- */
+#custom-pomodoro.long_rest {
+    color: @sapphire;
+    animation-name: breathe;
+    animation-duration: 4s;
+    animation-iteration-count: infinite;
+}
+
 /* ┌────────────────────────────────────────────────────────────────────────────┐ */
 /* │                             MODULE ICON COLORS                             │ */
 /* └────────────────────────────────────────────────────────────────────────────┘ */
@@ -179,7 +220,6 @@ window#waybar {
 /* --- System Status --- */
 #battery                { color: @green; }
 #custom-dunst           { color: @peach; }
-#custom-pomodoro        { color: @rosewater; }
 
 /* --- Status Specifics --- */
 #pulseaudio.muted       { color: @overlay0; opacity: 0.6; }
