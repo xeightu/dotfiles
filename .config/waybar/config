@@ -60,7 +60,7 @@
     // --- Custom Window Title ---
     "custom/window": {
         // [INFO] This module is controlled by custom script.
-        "exec": "~/.local/bin/waybar/window_title.sh",
+        "exec": "~/.local/bin/modules/window_title.sh",
         "return-type": "json",
         "format": "{}",
         "max-length": 100
@@ -98,6 +98,7 @@
     // --- Pomodoro (Uair) ---
     "custom/pomodoro": {
         "format": "{}",
+        "return-type": "json",
         "exec": "uair",
         "on-click": "uairctl toggle",
         "on-click-right": "uairctl next",
@@ -133,7 +134,7 @@
     "custom/dunst": {
         "format": " {}",
         "exec": "dunstctl count waiting",
-        "on-click": "kitty --class kitty-notif -e ~/.local/bin/utils/notif_history.sh",
+        "on-click": "kitty --class kitty-notif -e ~/.local/bin/actions/notif_history.sh",
         "on-click-right": "dunstctl close-all",
         "interval": 2,
         "tooltip": true
@@ -145,7 +146,7 @@
 
     // --- Package Updates ---
     "custom/updates": {
-        "exec":     "~/.local/bin/waybar/updates.sh",
+        "exec":     "~/.local/bin/modules/updates.sh",
         "interval": 900,                                                              // [CONFIG] Check for updates every 15 minutes.
         "return-type": "json",
         "format":   "{}",
@@ -162,14 +163,14 @@
 
     // --- Memory Module ---
     "memory": {
-        "format":   "󰍛 {used}GiB",
+        "format":   "  {used}GiB",
         "interval": 3
     },
 
     // --- Temperature Module ---
     "custom/temperature": {
         // [INFO] Uses the smart detection script we wrote.
-        "exec":         "~/.local/bin/waybar/temperature.sh",
+        "exec":         "~/.local/bin/modules/temperature.sh",
         "return-type":  "json",
         "interval":     3,
         "tooltip":      true
