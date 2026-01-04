@@ -1,24 +1,50 @@
 # ┌────────────────────────────────────────────────────────────────────────────┐
 # │                           2. Zsh Core & Options                            │
 # └────────────────────────────────────────────────────────────────────────────┘
-# [CONFIG] Set the desired Oh My Zsh theme.
-export ZSH_THEME="powerlevel10k/powerlevel10k"
 
-# --- History Settings ---
-# [CONFIG] Configure history behavior for a large and persistent command history.
-HISTSIZE=100000
-SAVEHIST=100000
+
+# ┌─── History (Atuin Fallback) ───────────────────────────────────────────────┐
+# [INFO] Atuin handles the real history. This is just a local session buffer.
+
+HISTSIZE=10000                 # Keep it moderate
+SAVEHIST=10000
 HISTFILE="$HOME/.zsh_history"
 
-# --- Zsh Options ---
-# [INFO] Options for a better and more intuitive interactive experience.
-setopt AUTO_CD              # Change directory without the 'cd' command.
-setopt NOTIFY               # Instantly notify on background job completion.
-setopt SHARE_HISTORY        # Share history between all open terminals.
-setopt EXTENDED_GLOB        # Enable extended globbing features (e.g., '^' for negation).
-setopt HIST_IGNORE_DUPS     # Don't save consecutive duplicate commands.
-setopt HIST_IGNORE_SPACE    # Don't save commands starting with a space.
+# [CRITICAL] Needed for history expansions (!!, !$) to work locally.
+setopt APPEND_HISTORY          # Append to file, don't overwrite
+setopt INC_APPEND_HISTORY      # Write immediately (crash safety)
+setopt HIST_IGNORE_SPACE       # Don't save commands starting with space (secrets)
+setopt HIST_VERIFY             # Show '!!' expansion before running (Safety)
 
-# --- Oh My Zsh Update Mode ---
-# [INFO] Set Oh My Zsh update mode to 'reminder' to avoid auto-updates.
+
+# ┌─── Navigation & Globbing ──────────────────────────────────────────────────┐
+
+# --- Directory Stack ---
+# [INFO] Makes 'cd' smart. Use 'popd' to go back.
+setopt AUTO_CD                 # cd by typing directory name
+setopt AUTO_PUSHD              # Save directory to stack on cd
+setopt PUSHD_IGNORE_DUPS       # Don't save duplicates in directory stack
+setopt PUSHD_SILENT            # Don't print stack after pushd/popd
+
+# --- Globbing ---
+# [CRITICAL] EXTENDED_GLOB allows using ^ for negation (ls ^*.txt).
+setopt EXTENDED_GLOB           # Advanced pattern matching features
+setopt NOMATCH                 # Print error if glob fails (standard behavior)
+
+
+# ┌─── User Experience (UX) ───────────────────────────────────────────────────┐
+
+# [INFO] 'INTERACTIVE_COMMENTS' is handled by Oh My Zsh.
+setopt CORRECT                 # Suggest corrections for commands (spelling)
+setopt NO_BEEP                 # Silence system beep
+setopt NOTIFY                  # Report status of background jobs immediately
+setopt NO_HUP                  # Don't kill background jobs on shell exit
+
+
+# ┌─── Oh My Zsh Integration ──────────────────────────────────────────────────┐
+
+# --- Theme & Update ---
+export ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# [CONFIG] Disable auto-update prompt (manual is better).
 zstyle ':omz:update' mode reminder
