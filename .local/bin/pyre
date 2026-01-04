@@ -1,34 +1,70 @@
-#!/bin/bash
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                          PYRE ENGINE - ENTRY POINT                         │
+#!/usr/bin/env zsh
+# ┌─── Pyre Framework - Entry Point ───────────────────────────────────────────┐
+# │  [INFO] Central controller for system theming and automation.              │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-# Source the function library.
+# ┌─── Core Initialization ────────────────────────────────────────────────────┐
+
+# --- Library Loading ---
+# [CRITICAL] Source the logic engine.
 source "$HOME/.config/pyre/functions.sh"
 
-# Check dependencies first
+# --- Pre-flight Checks ---
+# [INFO] Ensure all required binaries are present.
 check_dependencies
 
-# Argument handling
+# ┌─── Command Router ─────────────────────────────────────────────────────────┐
+
+# [INFO] Dispatch commands based on arguments.
 case "$1" in
+
+# --- Theme Management ---
 theme)
-  if [ -n "$2" ]; then
-    apply_theme "$2"
-  else
-    show_theme_menu
-  fi
+  case "$2" in
+  next) switch_theme_next ;; # [LOGIC] Cycle to next theme
+  set) apply_theme "$3" ;;   # [LOGIC] Apply specific theme
+  *)
+    if [[ -n "$2" ]]; then
+      apply_theme "$2"
+    else
+      show_theme_menu
+    fi
+    ;;
+  esac
   ;;
+
+# --- Wallpaper Control ---
+    wallpaper)
+        case "$2" in
+            next)   change_wallpaper_random ;;
+            select) show_wallpaper_menu ;;
+            auto)
+                while true; do
+                    change_wallpaper_random
+                    sleep 30m
+                done
+                ;;
+            *)      change_wallpaper_random ;;
+        esac
+        ;;
+
+# --- UI & Session ---
 layout)
   show_layout_menu
   ;;
+
 session)
   show_session_menu
   ;;
+
 reload)
   reload_services
   notify-send "Pyre" "System configurations reloaded." -i "system-reboot"
   ;;
+
+# --- Default Action ---
 *)
   show_main_menu
   ;;
+
 esac
