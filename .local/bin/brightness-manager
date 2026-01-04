@@ -15,14 +15,14 @@ FADE_SPEED=0.5                          # Transition speed (seconds per step)
 # [INFO] Tailored for early winter sunsets in Estonia.
 typeset -A SCHEDULE
 SCHEDULE=(
-    [06]=25 [07]=40 [08]=70             # Morning rise
+    [06]=20 [07]=40 [08]=70             # Morning rise
     [09]=90 [10]=90 [11]=90             # Work hours (start)
     [12]=90 [13]=90 [14]=90             # Work hours (mid)
     [15]=90 [16]=80 [17]=70             # Early sunset phase
     [18]=60 [19]=50 [20]=45             # Evening relaxation
-    [21]=40 [22]=30 [23]=25             # Pre-sleep wind down
-    [00]=20 [01]=20 [02]=20             # Deep night
-    [03]=20 [04]=20 [05]=20             # Deep night
+    [21]=40 [22]=30 [23]=20             # Pre-sleep wind down
+    [00]=15 [01]=15 [02]=15             # Deep night
+    [03]=10 [04]=10 [05]=10             # Deep night
 )
 
 # --- System Paths ---

@@ -39,7 +39,8 @@ case "$CHOICE" in
   notify-send "Screenshot Copied" "Temporary file deleted."
   ;;
 " Edit")
-  swappy -f "$TMP_FILE"
+  satty --filename "$TMP_FILE" --output-filename "$SORTED_DIR/$(date +'%Y-%m-%d_%H-%M-%S').png"
+  rm "$TMP_FILE"
   ;;
 " Save")
   FILENAME="$(date +'%Y-%m-%d_%H-%M-%S').png"

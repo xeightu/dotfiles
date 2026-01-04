@@ -15,10 +15,23 @@ trap 'rm -f "$TMP_FROZEN"' EXIT # [INFO] Clean up the full screenshot on exit.
 # [INFO] 1. Take a fullscreen shot to "freeze" the screen.
 grim "$TMP_FROZEN"
 
-# [INFO] 2. Use 'imv' to display the frozen screen as an overlay for selection.
+# [INFO] 2. Start imv in background
 imv -f "$TMP_FROZEN" &
 IMV_PID=$!
-sleep 0.3 # [INFO] A small delay to ensure 'imv' window is ready.
+
+# [FIX] Wait until imv actually appears in Hyprland clients list
+# We check every 0.05s. Usually takes 1-2 checks.
+TIMEOUT=20 # 1 second max (20 * 0.05)
+COUNT=0
+while ! hyprctl clients -j | jq -r '.[].class' | grep -q "imv"; do
+  sleep 0.05
+  ((COUNT++))
+  if [ $COUNT -ge $TIMEOUT ]; then
+    notify-send "Screenshot Error" "Overlay failed to launch."
+    kill $IMV_PID
+    exit 1
+  fi
+done
 
 # [INFO] 3. Use 'slurp' to select the desired geometry.
 GEOMETRY=$(slurp)

@@ -1,81 +1,48 @@
-#!/bin/bash
-# ┌──────────────────────────────────────────────────┐
-# │       INTERACTIVE UPDATE & SCAN PIPELINE         │
-# └──────────────────────────────────────────────────┘
+#!/usr/bin/env bash
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │                    Automated Update Pipeline                               │
+# └────────────────────────────────────────────────────────────────────────────┘
 
-# --- Configuration ---
-export PACMAN_LOG="/tmp/pacman_update.log"
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-source "$SCRIPT_DIR/syslib.sh"
+source "$(dirname "$(realpath "$0")")/syslib.sh"
 
-# --- Lock File Mechanism ---
+trap 'echo ""; read -p "Press Enter to exit..."' EXIT
+
+# --- Lock Mechanism ---
 LOCK_FILE="/tmp/system_update.lock"
 if [ -f "$LOCK_FILE" ]; then
-  OLD_PID=$(cat "$LOCK_FILE")
-  if [ -n "$OLD_PID" ] && ps -p "$OLD_PID" >/dev/null 2>&1; then
-    notify-send "System Update" "Already running (PID: $OLD_PID)." -u critical
-    echo "Process already running."
-    exit 1
-  else
-    echo "Removing stale lock file..."
-    rm -f "$LOCK_FILE"
-  fi
-fi
-echo $$ >"$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"' EXIT
-
-# --- Execution ---
-
-print_header "PRE-UPDATE CHECKS"
-
-# 1. Internet
-if ! check_internet; then
-  notify-send "System Update" "No internet connection" -u critical
+  printf "%b[ERROR] Update is already running!%b\n" "${C_RED}" "${C_NC}"
   exit 1
 fi
+echo $$ >"$LOCK_FILE"
+trap 'rm -f "$LOCK_FILE"; echo ""; read -p "Press Enter to exit..."' EXIT
 
-# 2. News
-check_arch_news
+# --- Execution Flow ---
 
-# 3. Snapshot
-create_snapshot
+banner "PRE-UPDATE CHECKS"
+if ! require_network; then exit 1; fi
 
-# 4. Mirrors
-if ask_user "Update Mirrorlist?"; then
-  update_mirrors
+check_news
+smart_snapshot
+optimize_mirrors
+
+if ask "Start System Update?"; then
+  sys_update
 fi
 
-# 5. Update
-if ask_user "Start System Update (Pacman/Yay)?"; then
-  sudo -v
-  perform_update
-else
-  echo "Update skipped."
+if ask "Run System Cleanup?"; then
+  sys_cleanup
 fi
 
-# 6. Cleanup
-if ask_user "Perform System Cleanup?"; then
-  perform_cleanup
-fi
+# --- Reboot Logic (System Log Analysis) ---
+CRITICAL_REGEX="(linux|nvidia|systemd|wayland|mesa|intel-ucode|amd-ucode)"
 
-# --- Finalization & Reboot Check ---
-
-CRITICAL_REGEX="(linux|linux-lts|linux-zen|nvidia|systemd|wayland|mesa|intel-ucode|amd-ucode|linux-firmware|dkms)"
-CRITICAL_COUNT=$(grep -E "upgraded $CRITICAL_REGEX" "$PACMAN_LOG" 2>/dev/null | wc -l)
-
-if [ "$CRITICAL_COUNT" -gt 0 ]; then
-  notify-send "System Update" "Reboot required (Kernel/Drivers updated)." -u critical -i system-reboot
-  printf "\n${C_RED}!!! CRITICAL UPDATES DETECTED (Kernel/Drivers) !!!${C_NC}\n"
-
-  if ask_user "Reboot system now?"; then
+# [FIX] Read the REAL system log instead of a temp file.
+# We verify if any critical package was upgraded in the last 100 log entries.
+if tail -n 100 /var/log/pacman.log | grep -E "\[ALPM\] upgraded $CRITICAL_REGEX" &>/dev/null; then
+  printf "\n%b[CRITICAL] Kernel/Drivers updated.%b\n" "${C_RED}" "${C_NC}"
+  if ask "Reboot now?"; then
     systemctl reboot
   fi
 else
-  notify-send "System Update" "Update complete." -u normal
-  printf "\n${C_GREEN}System is up to date. No reboot required.${C_NC}\n"
+  printf "\n%bSystem up to date.%b\n" "${C_GREEN}" "${C_NC}"
 fi
-
-[ -f "$PACMAN_LOG" ] && sudo rm -f "$PACMAN_LOG"
-
-echo -e "\n${C_BLUE}Done.${C_NC}"
-read -p "Press Enter to exit..."
