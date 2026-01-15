@@ -5,8 +5,6 @@
 typeset -U path
 path=(
     "$HOME/.local/bin"
-    "$HOME/.spicetify"
-    "$HOME/.lmstudio/bin"
     $path
 )
 export PATH
