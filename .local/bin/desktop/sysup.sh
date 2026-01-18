@@ -1,48 +1,101 @@
 #!/usr/bin/env bash
 # ┌────────────────────────────────────────────────────────────────────────────┐
-# │                    Automated Update Pipeline                               │
+# │ AUTOMATED UPDATE PIPELINE                                                  │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-source "$(dirname "$(realpath "$0")")/syslib.sh"
+# [INFO] Resolve absolute path to load library safely
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+source "$SCRIPT_DIR/syslib.sh"
 
-trap 'echo ""; read -p "Press Enter to exit..."' EXIT
+# ┌─── Configuration ──────────────────────────────────────────────────────────┐
 
-# --- Lock Mechanism ---
-LOCK_FILE="/tmp/system_update.lock"
-if [ -f "$LOCK_FILE" ]; then
-  printf "%b[ERROR] Update is already running!%b\n" "${C_RED}" "${C_NC}"
-  exit 1
-fi
-echo $$ >"$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"; echo ""; read -p "Press Enter to exit..."' EXIT
+LOCK_FILE="/tmp/sysup.lock"
+LOG_FILE="/var/log/pacman.log"
 
-# --- Execution Flow ---
+# [CONFIG] Regex for packages requiring reboot
+# Includes kernel, microcode, systemd, and filesystem drivers
+CRITICAL_REGEX="(linux|nvidia|systemd|wayland|mesa|.*-ucode|linux-firmware|cryptsetup|btrfs-progs)"
 
-banner "PRE-UPDATE CHECKS"
-if ! require_network; then exit 1; fi
+# ┌─── Process Safety ─────────────────────────────────────────────────────────┐
 
-check_news
-smart_snapshot
-optimize_mirrors
+acquire_lock() {
+  if [[ -f "$LOCK_FILE" ]]; then
+    local pid
+    pid=$(cat "$LOCK_FILE")
 
-if ask "Start System Update?"; then
-  sys_update
-fi
-
-if ask "Run System Cleanup?"; then
-  sys_cleanup
-fi
-
-# --- Reboot Logic (System Log Analysis) ---
-CRITICAL_REGEX="(linux|nvidia|systemd|wayland|mesa|intel-ucode|amd-ucode)"
-
-# [FIX] Read the REAL system log instead of a temp file.
-# We verify if any critical package was upgraded in the last 100 log entries.
-if tail -n 100 /var/log/pacman.log | grep -E "\[ALPM\] upgraded $CRITICAL_REGEX" &>/dev/null; then
-  printf "\n%b[CRITICAL] Kernel/Drivers updated.%b\n" "${C_RED}" "${C_NC}"
-  if ask "Reboot now?"; then
-    systemctl reboot
+    # [CHECK] Is the process actually alive?
+    if ps -p "$pid" >/dev/null 2>&1; then
+      die "Update is already running (PID: $pid)"
+    else
+      # [FIX] Stale lock detected
+      rm -f "$LOCK_FILE"
+    fi
   fi
-else
-  printf "\n%bSystem up to date.%b\n" "${C_GREEN}" "${C_NC}"
-fi
+  echo $$ >"$LOCK_FILE"
+}
+
+cleanup_trap() {
+  sudo -k # [SEC] Revoke sudo token
+  rm -f "$LOCK_FILE"
+}
+trap cleanup_trap EXIT INT TERM
+
+# ┌─── Logic: Reboot Analysis ─────────────────────────────────────────────────┐
+
+analyze_reboot() {
+  [[ ! -f "$LOG_FILE" ]] && return
+
+  # [LOGIC] Compare log size before/after update
+  # $START_LINE is captured in main()
+  local changes
+  changes=$(tail -n +$((START_LINE + 1)) "$LOG_FILE" | grep -E "\[ALPM\] upgraded $CRITICAL_REGEX")
+
+  if [[ -n "$changes" ]]; then
+    printf "\n%b[CRITICAL] Core components updated:%b\n" "${C_RED}" "${C_NC}"
+
+    # [VISUAL] Format output nicely
+    echo "$changes" | awk '{print "   " $4 " " $5}' | sed 's/upgraded//'
+    echo ""
+
+    if ask "Reboot system now?" "Y"; then
+      systemctl reboot
+    fi
+  else
+    printf "\n%bSystem up to date. No reboot required.%b\n" "${C_GREEN}" "${C_NC}"
+  fi
+}
+
+# ┌─── Main Execution ─────────────────────────────────────────────────────────┐
+
+main() {
+  # 1. Initialization
+  acquire_lock
+  require_network
+
+  # [HACK] Capture log position *before* any transaction
+  START_LINE=$(wc -l <"$LOG_FILE" 2>/dev/null || echo 0)
+
+  # 2. Intelligence Layer (Bash)
+  # Tasks that Topgrade cannot perform interactively
+  check_news
+  smart_snapshot
+
+  # 3. Execution Layer (Rust/Topgrade)
+  # Topgrade handles: Mirrors, Updates, Cleanup
+  banner "SYSTEM UPDATE"
+  if ask "Start full system update?" "Y"; then
+    topgrade
+  else
+    echo ""
+    printf "%b[INFO] Update skipped by user.%b\n" "${C_YELLOW}" "${C_NC}"
+    exit 0
+  fi
+
+  # 4. Analysis Layer (Bash)
+  analyze_reboot
+
+  echo ""
+  read -r -p "Press Enter to exit..."
+}
+
+main
