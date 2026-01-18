@@ -119,3 +119,4 @@ id_rsa
 id_ed25519
 .zsh_history
 .bash_history
+.config/spicetify/config-xpui.ini
