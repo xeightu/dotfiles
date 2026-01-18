@@ -14,13 +14,15 @@
 
 # --- Dynamic Variables ---
 local zen_paths=($HOME/.zen/*"Default (release)"(/N))
-local ZEN_PROFILE="${zen_paths[1]:-$HOME/.zen/default}"
-local BIN_DIR="$HOME/.local/bin"
+local zen_profile="${zen_paths[1]:-$HOME/.zen/default}"
+local bin_dir="$HOME/.local/bin"
 
-# [CACHE] Global cache to avoid rebuilding menu every time.
-typeset -g _METRO_MENU_CACHE=""
+# [INFO] Global cache to avoid rebuilding menu every time
+typeset -g _metro_menu_cache=""
 
-# [ASSETS] Visual indicators (Exported for FZF subshell visibility)
+# --- Visual Assets ---
+
+# [CONFIG] Visual indicators (Exported for FZF subshell visibility)
 export METRO_ICON_FILE=""
 export METRO_ICON_DIR=""
 export METRO_ICON_CONF=""
@@ -35,7 +37,7 @@ metro_modules=(
     [wofi]="$DOTS/wofi"
     [rofi]="$DOTS/rofi"
     [zsh]="$ZSH_CONFIG_DIR"
-    [scripts]="$BIN_DIR"
+    [scripts]="$bin_dir"
     [pyre]="$DOTS/pyre"
 )
 
@@ -89,7 +91,7 @@ metro_files=(
     [sampler]="$DOTS/sampler/sampler.yml"              # TUI System monitor
     [cava]="$DOTS/cava/config"                         # Audio visualizer
     [imv]="$DOTS/imv/config"                           # Image viewer
-    [userjs]="${ZEN_PROFILE}/user.js"                  # Browser hardening config
+    [userjs]="${zen_profile}/user.js"                  # Browser hardening config
 
     # --- 5. System Configs ---
     [topgrade]="$DOTS/topgrade.toml"
@@ -98,9 +100,9 @@ metro_files=(
     [keyd]="/etc/keyd/default.conf"                    # Keyboard remapping
 
     # --- 6. Scripts ---
-    [pyreconf]="$BIN_DIR/pyre"                         # Engine entry point
+    [pyreconf]="$bin_dir/pyre"                         # Engine entry point
     [pyrefn]="$HOME/.config/pyre/functions.sh"         # Engine library functions
-    [bright]="$BIN_DIR/brightness-manager"             # Monitor brightness logic
+    [bright]="$bin_dir/brightness-manager"             # Monitor brightness logic
     [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"  # CPU power management
     [gitig]="$HOME/.gitignore"                         # Global git ignore patterns
 )
@@ -111,7 +113,7 @@ metro_files=(
 # --- Menu Generator ---
 # [INFO] Generates the formatted list for FZF. Uses cache for speed.
 _metro_build_menu() {
-    [[ -n "$_METRO_MENU_CACHE" ]] && { print -r -- "$_METRO_MENU_CACHE"; return; }
+    [[ -n "$_metro_menu_cache" ]] && { print -r -- "$_metro_menu_cache"; return; }
 
     local file_list
     file_list=$(for k in "${(@k)metro_files}"; do 
@@ -124,10 +126,10 @@ _metro_build_menu() {
     done | sort -k 3 -V)
     
     # [CACHE] Store the result
-    _METRO_MENU_CACHE=$(printf "p10k           %s  Configure Powerlevel10k\n%s\n%s" \
+    _metro_menu_cache=$(printf "p10k           %s  Configure Powerlevel10k\n%s\n%s" \
         "$METRO_ICON_CONF" "$file_list" "$module_list")
     
-    print -r -- "$_METRO_MENU_CACHE"
+    print -r -- "$_metro_menu_cache"
 }
 
 # --- Preview Resolver ---
@@ -146,7 +148,6 @@ _metro_pick() {
     local filter="${2:-cat}"
     
     # 1. Dependency Resolution (Startup)
-    # [ARCH] Resolve absolute paths via Zsh 'commands' hash.
     local _bat="${commands[bat]:-cat}"
     local _eza="${commands[eza]:-ls}"
 
@@ -230,22 +231,26 @@ _metro_completion() {
 
 # ┌─── Public Commands ────────────────────────────────────────────────────────┐
 
-# --- Edit (The Editor) ---
-# [USAGE] edit [alias | path]
+# --- The Editor ---
+# [INFO] Open configuration files or modules in editor.
+# [EXAMPLE] edit             # Interactive mode
+# [EXAMPLE] edit p10k        # Special configuration
 edit() {
-    # 1. CLI ARGUMENT MODE
+    # --- CLI Argument Mode ---
     if [[ -n "$1" ]]; then
         local target="$1"
+        
+        # Special case for Powerlevel10k
         [[ "$target" == "p10k" ]] && { p10k configure; return 0; }
         
-        # [LOGIC] Check Files (Direct Array Access)
+        # [INFO] Check Files (Direct Array Access)
         if [[ -v metro_files[$target] ]]; then
             local f="${metro_files[$target]}"
             z "${f:h}" && $EDITOR "${f:t}"
             return 0
         fi
 
-        # [LOGIC] Check Modules (Direct Array Access)
+        # [INFO] Check Modules (Direct Array Access)
         if [[ -v metro_modules[$target] ]]; then
             _edit_module "${metro_modules[$target]}"
             return 0
@@ -255,29 +260,35 @@ edit() {
         return 1
     fi
     
-    # 2. INTERACTIVE MODE
+    # --- Interactive Mode ---
     local selection
     selection=$(_metro_pick "Select a config file or module to edit")
+    
     [[ -n "$selection" ]] && edit "${selection%% *}"
 }
 
-# --- View (The Viewer) ---
-# [USAGE] view [-c] [alias]
+# --- The Viewer ---
+# [INFO] View configuration files or directory trees.
+# [EXAMPLE] view zsh         # View formatted with bat
+# [EXAMPLE] view -c nvim     # View raw content (plain)
 view() {
-    # 1. CLI ARGUMENT MODE
+    # --- CLI Argument Mode ---
     if [[ -n "$1" ]]; then
         local target="$1"
         local opts=(--style=header,grid,numbers)
         
+        # Check for raw flag
         if [[ "$1" == "-c" ]]; then 
             opts=(--style=plain); shift; target="$1"
         fi
 
+        # [INFO] Render File Content
         if [[ -v metro_files[$target] ]]; then
             bat --paging=never "${opts[@]}" --color=always "${metro_files[$target]}"
             return 0
         fi
 
+        # [INFO] Render Directory Tree
         if [[ -v metro_modules[$target] ]]; then
             eza --tree --level=3 --icons "${metro_modules[$target]}"
             return 0
@@ -287,24 +298,29 @@ view() {
         return 1
     fi
     
-    # 2. INTERACTIVE MODE
+    # --- Interactive Mode ---
     local selection
     selection=$(_metro_pick "View config content")
+    
     [[ -n "$selection" ]] && view "${selection%% *}"
 }
 
-# --- Goto (The Navigator) ---
-# [USAGE] goto [alias]
+# --- The Navigator ---
+# [INFO] Navigate to the directory containing the configuration.
+# [EXAMPLE] goto zsh         # Jump to zsh config folder
+# [EXAMPLE] goto nvim        # Jump to nvim config folder
 goto() {
-    # 1. CLI ARGUMENT MODE
+    # --- CLI Argument Mode ---
     if [[ -n "$1" ]]; then
         local target="$1"
         
+        # [INFO] Jump to File Parent
         if [[ -v metro_files[$target] ]]; then
             z "${metro_files[$target]:h}"
             return 0
         fi
 
+        # [INFO] Jump to Module Root
         if [[ -v metro_modules[$target] ]]; then
             z "${metro_modules[$target]}"
             return 0
@@ -314,38 +330,19 @@ goto() {
         return 1
     fi
 
-    # 2. INTERACTIVE MODE
+    # --- Interactive Mode ---
     local selection
     selection=$(_metro_pick "Select a destination to GO TO" "grep '$METRO_ICON_DIR'")
+    
     [[ -n "$selection" ]] && goto "${selection%% *}"
 }
+
 
 # ┌────────────────────────────────────────────────────────────────────────────┐
 # │                       Interactive Shell Enhancements                       │
 # └────────────────────────────────────────────────────────────────────────────┘
 
 # ┌─── Navigation Helpers ─────────────────────────────────────────────────────┐
-
-# --- Magic Enter ---
-# [INFO] Runs 'eza' (ls) when pressing Enter on an empty line.
-# [INFO] Shows 'git status' if inside a git repository.
-magic-enter() {
-    # Guard: If buffer is NOT empty, execute normal return
-    if [[ -n "${BUFFER// }" ]]; then
-        zle accept-line
-        return
-    fi
-
-    local cmd="eza --icons --group-directories-first --git"
-    
-    if command git status --porcelain &>/dev/null; then
-        cmd="$cmd && git status -sb"
-    fi
-
-    BUFFER="$cmd"
-    zle accept-line
-}
-zle -N magic-enter
 
 # --- Project Jumper ---
 # [INFO] Find directories containing .git and jump to them.
@@ -366,6 +363,29 @@ pj() {
         z "${project_dir/#\~/$HOME}"
     fi
 }
+
+# --- Magic-Enter ---
+# [INFO] Runs 'ls' on empty buffer, or 'git status' if in repo.
+magic-enter() {
+    # --- Guard Clause ---
+    # If buffer is NOT empty, execute normal return
+    if [[ -n "${BUFFER// }" ]]; then
+        zle accept-line
+        return
+    fi
+
+    # --- Execution Logic ---
+    local cmd="eza --icons --group-directories-first --git"
+    
+    # [INFO] Append git status if inside a repository
+    if command git status --porcelain &>/dev/null; then
+        cmd="$cmd && git status -sb"
+    fi
+
+    BUFFER="$cmd"
+    zle accept-line
+}
+zle -N magic-enter
 
 # --- Make & Enter ---
 # [INFO] Create a directory and cd into it immediately.
@@ -523,51 +543,37 @@ mdoc() {
     fi
 }
 
+# [INFO] wl-copy wrapper supporting pipe/file/string.
+# [INFO] Automatically strips ANSI colors.
+# [EXAMPLE] echo "col" | copy    # Pipe mode
+# [EXAMPLE] copy file.txt        # File mode
+# [EXAMPLE] copy "text"          # String mode
+copy() {
+    local clip_cmd="wl-copy"
+
+    # --- Input Processing ---
+    if [[ -n "$1" ]]; then
+        if [[ -f "$1" ]]; then
+            # File Input
+            sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' "$1" | $clip_cmd
+        else
+            # String Input
+            print -rn -- "$*" | sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' | $clip_cmd
+        fi
+    else
+        # Pipe Input
+        sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' | $clip_cmd
+    fi
+
+    # --- Feedback ---
+    (( $? == 0 )) && print -P "%F{green}✔%f Copied to clipboard." >&2
+}
+
 # --- Backup File ---
 # [INFO] Create a timestamped backup (file.bak.YYYYMMDD...)
 bak() {
     [[ -z "$1" ]] && { echo "Usage: bak <filename>"; return 1; }
     cp -iv "$1" "$1.bak.$(date +'%Y%m%d-%H%M%S')"
-}
-
-# --- Clipboard Wrapper ---
-# [INFO] Universal copier: handles Pipes, Files, and Arguments.
-# [FEAT] Strips ANSI colors automatically.
-# [USAGE] echo "col" | copy  (Pipe)
-# [USAGE] copy file.txt      (File)
-# [USAGE] copy "text"        (String)
-copy() {
-    # 1. Backend Detection
-    # [NOTE] Checks for Wayland > X11 > macOS
-    local clip_cmd
-    if   (( $+commands[wl-copy] )); then clip_cmd="wl-copy"
-    elif (( $+commands[xclip] ));   then clip_cmd="xclip -selection clipboard"
-    elif (( $+commands[pbcopy] ));  then clip_cmd="pbcopy"
-    else
-        echo "[Error] No clipboard utility found." >&2
-        return 1
-    fi
-
-    # 2. Input Strategy
-    # [LOGIC] If args exist: checks if file or string. If no args: reads stdin.
-    if [[ -n "$1" ]]; then
-        if [[ -f "$1" ]]; then
-            # Case A: File
-            cat "$1" | sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
-        else
-            # Case B: String Argument (print -n avoids trailing newline)
-            print -rn -- "$*" | sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
-        fi
-    else
-        # Case C: Stdin (Pipe)
-        sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
-    fi
-
-    # 3. User Feedback
-    # [UX] Print to stderr so it doesn't break pipe chains
-    if [[ $? -eq 0 ]]; then
-        print -P "%F{green}✔%f Copied to clipboard." >&2
-    fi
 }
 
 
@@ -687,25 +693,24 @@ dfd() {
     fi
 }
 
-# --- Dotfiles Smart Copy ---
 # [INFO] Interactive picker for changed dotfiles.
-# [NOTE] simple & stable version: uses standard git diff.
+# [INFO] Simple & stable version using standard git diff.
 dcf() {
     # [CONFIG] Raw git command to bypass aliases
     local raw_git="git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
 
-    # [CHECK] Get status
+    # --- Status Check ---
     local changed_files
     changed_files=$(dotgit status --porcelain)
+    
     [[ -z "$changed_files" ]] && { echo "No changes found in dotfiles."; return 0; }
 
+    # --- Selection Logic ---
     local file
-    # [CORE] Clean Selection Logic
-    # 1. sed removes status codes ('M  ', 'D  ') -> FZF sees clean paths.
-    # 2. PREVIEW LOGIC:
-    #    We pipe 'git diff' to 'grep .'. 
-    #    - If diff has text (Mod/Del) -> grep returns true -> 'bat' is skipped.
-    #    - If diff is empty (New file) -> grep returns false -> '||' runs 'bat'.
+    
+    # [INFO] Pipeline Strategy:
+    # 1. sed: Removes status codes ('M ', 'D ') for clean paths.
+    # 2. preview: Uses grep to switch between diff (modified) and bat (new).
     file=$(echo "$changed_files" | sed 's/^...//' | fzf \
         --height=40% \
         --layout=reverse \
@@ -716,7 +721,7 @@ dcf() {
         --preview="$raw_git diff --color=always -- {} | grep . || bat --color=always --style=numbers -- {}"
     )
 
-    # [ACTION] Handle selection
+    # --- Execution ---
     if [[ -n "$file" ]]; then
         # Check if file is tracked
         if dotgit ls-files --error-unmatch "$file" >/dev/null 2>&1; then
