@@ -2,14 +2,12 @@
 # ┌────────────────────────────────────────────────────────────────────────────┐
 # │                         HOURLY BRIGHTNESS SCHEDULE                         │
 # └────────────────────────────────────────────────────────────────────────────┘
-# [INFO] Adaptive brightness controller based on hourly schedule.
-# [INFO] Features smooth transitions and smart user-override detection.
 
 # --- Configuration ---
 
-# [CONFIG] Operational thresholds and timing.
 THRESHOLD=10                            # Hysteresis threshold (percent)
-FADE_SPEED=0.5                          # Transition speed (seconds per step)
+FADE_SPEED=0.05                         # Smoother transition (seconds per step)
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness-manager.pid"
 
 # [CONFIG] Hourly brightness map (Hour=Percentage).
 # [INFO] Tailored for early winter sunsets in Estonia.
@@ -25,101 +23,96 @@ SCHEDULE=(
     [03]=10 [04]=10 [05]=10             # Deep night
 )
 
-# --- System Paths ---
-
-# [INFO] Runtime lock file location (aligned with XDG standards).
 LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness_disabled"
 
 # --- Helper Functions ---
 
-# [INFO] Smoothly transitions brightness to the target level.
-# [INFO] Aborts if user manually changes brightness during transition.
-# [EXAMPLE] fade_brightness 50 0.5
+# Check if brightnessctl is installed
+if ! command -v brightnessctl >/dev/null 2>&1; then
+    echo "Error: brightnessctl is not installed." >&2
+    exit 1
+fi
+
 fade_brightness() {
-    local target=$1
+    local target_pct=$1
     local speed=$2
 
-    integer max=$(brightnessctl m)
-    integer current_raw=$(brightnessctl g)
-    integer current_pct=$((current_raw * 100 / max))
+    local max=$(brightnessctl m)
+    local target_raw=$(( target_pct * max / 100 ))
+    local current_raw=$(brightnessctl g)
+    
+    if (( current_raw == target_raw )); then return; fi
 
-    if (( current_pct == target )); then return; fi
+    # Determine step size in raw values for better precision
+    local total_diff=$(( target_raw - current_raw ))
+    local step_raw=$(( total_diff > 0 ? (max / 100) : -(max / 100) ))
+    if (( step_raw == 0 )); then step_raw=$(( total_diff > 0 ? 1 : -1 )); fi
 
-    integer step=1
-    if (( current_pct > target )); then step=-1; fi
+    while (( (step_raw > 0 && current_raw < target_raw) || (step_raw < 0 && current_raw > target_raw) )); do
+        (( current_raw += step_raw ))
+        
+        # Clamp value
+        if (( step_raw > 0 && current_raw > target_raw )) || (( step_raw < 0 && current_raw < target_raw )); then
+            current_raw=$target_raw
+        fi
 
-    while (( current_pct != target )); do
-        (( current_pct += step ))
-        brightnessctl set "${current_pct}%" &>/dev/null
+        brightnessctl set "${current_raw}" &>/dev/null
         sleep $speed
 
-        # [CRITICAL] User interruption detection logic.
-        integer check_raw=$(brightnessctl g)
-        integer check_pct=$((check_raw * 100 / max))
-        
-        # Calculate absolute difference
-        integer diff=$(( check_pct > current_pct ? check_pct - current_pct : current_pct - check_pct ))
-
-        if (( diff > 2 )); then
-            echo "⚠️ User interrupted fade."
-            break
+        # Detect user interruption using raw values (tolerance: 5% of max)
+        local check_raw=$(brightnessctl g)
+        local diff=$(( check_raw > current_raw ? check_raw - current_raw : current_raw - check_raw ))
+        if (( diff > (max * 0.05) )); then
+            echo "User interrupted fade."
+            return 1
         fi
     done
 }
 
+# --- Lock & PID Management ---
+
+# Ensure only one instance is running
+if [[ -f "$PID_FILE" ]]; then
+    local old_pid=$(cat "$PID_FILE")
+    if kill -0 "$old_pid" 2>/dev/null; then
+        if [[ "$1" == "--force" ]]; then
+            kill "$old_pid"
+        else
+            exit 0
+        fi
+    fi
+fi
+echo $$ > "$PID_FILE"
+trap "rm -f $PID_FILE" EXIT
+
 # --- Core Logic ---
 
-# [INFO] Check for lock file to respect user disable command.
 if [[ -f "$LOCK_FILE" ]]; then exit 0; fi
 
-# [INFO] Determine current timeframe and targets.
 integer HOUR_NOW=$(date +%H)
-integer HOUR_PREV=$(( HOUR_NOW - 1 ))
-
-# Handle midnight wrap-around (00 -> 23)
-if (( HOUR_PREV < 0 )); then HOUR_PREV=23; fi
-
 KEY_NOW=$(printf "%02d" $HOUR_NOW)
-KEY_PREV=$(printf "%02d" $HOUR_PREV)
-
-# [INFO] Retrieve targets from schedule (default to 50 if missing).
 integer TARGET_NOW=${SCHEDULE[$KEY_NOW]:-50}
-integer TARGET_PREV=${SCHEDULE[$KEY_PREV]:-50}
 
-# [INFO] Read current system state.
 integer MAX=$(brightnessctl m 2>/dev/null) || exit 1
 integer CURRENT_RAW=$(brightnessctl g 2>/dev/null)
 integer CURRENT_PCT=$((CURRENT_RAW * 100 / MAX))
 
 # [INFO] Force Mode Check
 if [[ "$1" == "--force" ]]; then
-    echo "💪 Force mode: Resetting to schedule ($KEY_NOW: ${TARGET_NOW}%)..."
+    echo "Force mode: $KEY_NOW -> ${TARGET_NOW}%"
     fade_brightness $TARGET_NOW $FADE_SPEED
-    echo "✅ Reset complete."
     exit 0
 fi
 
-# [INFO] Calculate deviation from targets.
-# diff_now:  Distance from current hour target.
-# diff_prev: Distance from previous hour target (to detect schedule adherence).
+# [INFO] Calculate deviation
 integer diff_now=$(( CURRENT_PCT > TARGET_NOW ? CURRENT_PCT - TARGET_NOW : TARGET_NOW - CURRENT_PCT ))
-integer diff_prev=$(( CURRENT_PCT > TARGET_PREV ? CURRENT_PCT - TARGET_PREV : TARGET_PREV - CURRENT_PCT ))
 
-# [INFO] Decision Matrix.
 if (( diff_now <= 2 )); then
-    # Already on target.
     exit 0
-elif (( diff_prev <= THRESHOLD )); then
-    # User was adhering to previous schedule -> Transition to new hour.
-    echo "⏰ Hour changed ($KEY_PREV: ${TARGET_PREV}% -> $KEY_NOW: ${TARGET_NOW}%). Adjusting..."
-    fade_brightness $TARGET_NOW $FADE_SPEED
-    echo "✅ Adjusted to ${TARGET_NOW}%"
 elif (( diff_now <= THRESHOLD )); then
-    # Minor drift correction (only if deviation is small).
-    if (( diff_now > 2 )); then
-        fade_brightness $TARGET_NOW $FADE_SPEED
-    fi
+    echo "Adjusting brightness: ${CURRENT_PCT}% -> ${TARGET_NOW}%"
+    fade_brightness $TARGET_NOW $FADE_SPEED
 else
-    # Large deviation detected -> User override active.
+    # User override - do nothing until the next significant schedule change or --force
     exit 0
 fi
