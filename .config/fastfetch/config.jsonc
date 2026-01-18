@@ -1,125 +1,197 @@
-// ┌────────────────────────────────────────────────────────────────────────────┐
-// │                       FASTFETCH - MAIN CONFIGURATION                       │
-// └────────────────────────────────────────────────────────────────────────────┘
 {
-	// [INFO] Schema for editor autocompletion and validation.
-	"$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  // [INFO] Schema for editor autocompletion and validation.
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
 
-	// ┌────────────────────────────────────────────────────────────────────────────┐
-	// │                            LOGO CONFIGURATION                              │
-	// └────────────────────────────────────────────────────────────────────────────┘
-	"logo": {
-		// [CONFIG] ASCII logo from a text file.
-		"type": "file",
-		"source": "~/.config/fastfetch/arch.txt",
-		"padding": {
-			"top": 1,
-			"left": 1
-		}
-	},
 
-	// ┌────────────────────────────────────────────────────────────────────────────┐
-	// │                              MODULES DISPLAY                               │
-	// └────────────────────────────────────────────────────────────────────────────┘
-	"modules": [
-		"break",
+  // ┌────────────────────────────────────────────────────────────────────────────┐
+  // │                             LOGO CONFIGURATION                             │
+  // └────────────────────────────────────────────────────────────────────────────┘
+  "logo": {
+    "type":    "file",
+    "source":  "~/.config/fastfetch/arch.txt",
+    "padding": {
+      "top":  1,
+      "left": 2
+    }
+  },
 
-		// --- Hardware Information ---
-		{ "type": "custom", "format": "┌─────────────────────────────── Hardware ───────────────────────────────┐", "outputColor": "red" },
-		{
-			"type":     "title",
-			"key":      " PC",
-			"keyColor": "green"
-		},
-		{
-			"type":     "cpu",
-			"key":      "│ ├󰍛 CPU",
-			"format":   "{1}",
-			"keyColor": "green"
-		},
-		{
-			"type":     "gpu",
-			"key":      "│ ├󰍛 GPU",
-			"keyColor": "green"
-		},
-		{
-			"type":     "disk",
-			"key":      "│ ├ Disk",
-			"format":   "{} / {} ({})",
-			"folder":   "/",
-			"keyColor": "green"
-		},
-		{
-			"type":     "memory",
-			"key":      "└ └󰍛 Memory",
-			"keyColor": "green"
-		},
-		{ "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" },
-		"break",
 
-		// --- Software Information ---
-		{ "type": "custom", "format": "┌─────────────────────────────── Software ───────────────────────────────┐", "outputColor": "red" },
-		{
-			"type":     "os",
-			"key":      " OS",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "kernel",
-			"key":      "│ ├ Kernel",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "packages",
-			"key":      "│ ├󰏖 Packages",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "terminal",
-			"key":      "│ ├ Terminal",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "shell",
-			"key":      "│ ├ Shell",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "command",
-			"key":      "│ ├ OS Age",
-			"text":     "birth_install=$(stat -c %W /); current=$(date +%s); time_progression=$((current - birth_install)); days_difference=$((time_progression / 86400)); echo $days_difference days",
-			"keyColor": "yellow"
-		},
-		{
-			"type":     "uptime",
-			"key":      "└ └ Uptime",
-			"keyColor": "yellow"
-		},
-		{ "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" },
-		"break",
+  // ┌────────────────────────────────────────────────────────────────────────────┐
+  // │                              GLOBAL DISPLAY                                │
+  // └────────────────────────────────────────────────────────────────────────────┘
+  "display": {
+    // [CONFIG] Disable default separator to maintain continuous tree lines.
+    "separator": " "
+  },
 
-		// --- Display & WM Information ---
-		{ "type": "custom", "format": "┌──────────────────────────────── Display ───────────────────────────────┐", "outputColor": "red" },
-		{
-			"type":     "gpu",
-			"key":      "│ ├󰍛 GPU Driver",
-			"format":   "{1} ({3})",
-			"keyColor": "blue"
-		},
-		{
-			"type":     "lm",
-			"key":      "│ ├ LM",
-			"keyColor": "blue"
-		},
-		{
-			"type":     "wm",
-			"key":      "└ └ WM",
-			"keyColor": "blue"
-		},
-		{ "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" },
 
-		// --- Color Palette ---
-		{ "type": "custom", "format": "               \u001b[90m  \u001b[31m  \u001b[32m  \u001b[33m  \u001b[34m  \u001b[35m  \u001b[36m  \u001b[37m " },
-		"break"
-	]
+  // ┌────────────────────────────────────────────────────────────────────────────┐
+  // │                             MODULES PIPELINE                               │
+  // └────────────────────────────────────────────────────────────────────────────┘
+  "modules": [
+    "break",
+
+    // ┌─── HARDWARE GROUP ────────────────────────────────────────────────────────┐
+    // │ Color: Green | Topology: Tree                                             │
+    // └───────────────────────────────────────────────────────────────────────────┘
+    { "type": "custom", "format": "┌─────────────────────────────── Hardware ───────────────────────────────┐", "outputColor": "red" },
+
+    // [ROOT NODE] Hostname
+    {
+      "type":       "title",
+      "key":        "│  PC",
+      "keyColor":   "green"
+    },
+
+    // [BRANCH] Processor
+    {
+      "type":       "cpu",
+      "key":        "│ ├─ 󰍛 CPU",
+      "format":     "{1} ({3})",
+      "keyColor":   "green"
+    },
+
+    // [BRANCH] Graphics
+    {
+      "type":       "gpu",
+      "key":        "│ ├─ 󰍛 GPU",
+      "format":     "{2} {1}",       // [INFO] Vendor + Model
+      "hideType":   "integrated",    // [FIX] Hide iGPU to reduce noise
+      "keyColor":   "green"
+    },
+
+    // [BRANCH] Storage
+    {
+      "type":       "disk",
+      "key":        "│ ├─  Disk",
+      "format":     "{1} / {2} ({3})",
+      "keyColor":   "green"
+    },
+
+    // [LEAF NODE] Memory
+    {
+      "type":       "memory",
+      "key":        "│ └─ 󰑭 Memory",
+      "format":     "{1} / {2} ({3})",
+      "keyColor":   "green"
+    },
+
+    { "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" },
+    "break",
+
+
+    // ┌─── SOFTWARE GROUP ────────────────────────────────────────────────────────┐
+    // │ Color: Yellow | Topology: Tree                                            │
+    // └───────────────────────────────────────────────────────────────────────────┘
+    { "type": "custom", "format": "┌─────────────────────────────── Software ───────────────────────────────┐", "outputColor": "red" },
+
+    // [ROOT NODE] Operating System
+    {
+      "type":       "os",
+      "key":        "│  OS",
+      "keyColor":   "yellow"
+    },
+
+    // [BRANCH] Core
+    {
+      "type":       "kernel",
+      "key":        "│ ├─  Kernel",
+      "keyColor":   "yellow"
+    },
+
+    // [BRANCH] Package Managers
+    {
+      "type":       "packages",
+      "key":        "│ ├─ 󰏖 Packages",
+      "keyColor":   "yellow"
+    },
+
+    // [BRANCH] Window Manager
+    {
+      "type":       "wm",
+      "key":        "│ ├─  WM",
+      "keyColor":   "yellow"
+    },
+
+    // [BRANCH] Visual Style
+    {
+      "type":       "theme",
+      "key":        "│ ├─ 󰉼 Theme",
+      "format":     "{2}",           // [FIX] Display theme name only
+      "keyColor":   "yellow"
+    },
+
+    // [BRANCH] Terminal Emulator
+    {
+      "type":       "terminal",
+      "key":        "│ ├─  Terminal",
+      "format":     "{5}",           // [INFO] Name only
+      "keyColor":   "yellow"
+    },
+
+    // [LEAF NODE] Shell
+    {
+      "type":       "shell",
+      "key":        "│ └─  Shell",
+      "keyColor":   "yellow"
+    },
+
+    { "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" },
+    "break",
+
+
+    // ┌─── STATUS GROUP ──────────────────────────────────────────────────────────┐
+    // │ Color: Blue | Topology: Tree                                              │
+    // └───────────────────────────────────────────────────────────────────────────┘
+    { "type": "custom", "format": "┌──────────────────────────────── Status ────────────────────────────────┐", "outputColor": "red" },
+
+    // [ROOT NODE] Network Interface
+    {
+      "type":       "localip",
+      "key":        "│ 󰩟 Network",
+      "showIpv6":   false,
+      "showMac":    false,
+      "keyColor":   "blue"
+    },
+
+    // [BRANCH] Display Resolution
+    {
+      "type":       "display",
+      "key":        "│ ├─ 󰍹 Screen",
+      "format":     "{1}x{2} @ {3}Hz",
+      "keyColor":   "blue"
+    },
+
+    // [BRANCH] Task Count
+    {
+      "type":       "processes",
+      "key":        "│ ├─ 󰆧 Processes",
+      "keyColor":   "blue"
+    },
+
+    // [BRANCH] Installation Age
+    {
+      "type":       "command",
+      "key":        "│ ├─  OS Age",
+      // [INFO] Calculate days since root filesystem creation
+      "text":       "echo $(( ($(date +%s) - $(stat -c %W /)) / 86400 )) days",
+      "keyColor":   "blue"
+    },
+
+    // [BRANCH] System Uptime
+    {
+      "type":       "uptime",
+      "key":        "│ └─ 󰅐 Uptime",
+      "keyColor":   "blue"
+    },
+
+    // [LEAF NODE] Media Player
+    {
+      "type":       "media",
+      "key":        "│ └─ 󰝚 Media",
+      "keyColor":   "blue"
+    },
+
+    { "type": "custom", "format": "└────────────────────────────────────────────────────────────────────────┘", "outputColor": "red" }
+  ]
 }
