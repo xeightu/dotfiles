@@ -2,10 +2,10 @@
 # │                                6. Functions                                │
 # └────────────────────────────────────────────────────────────────────────────┘
 
-# ┌─── Metro System - Config Maps ─────────────────────────────────────────────┐
+# ┌─── Metro System ───────────────────────────────────────────────────────────┐
 # │                                                                            │
-# │  [INFO] Centralized registry for dotfiles navigation.                      │
-# │  [NOTE] Defines targets for 'edit' and 'view' commands.                    │
+# │  [INFO] Centralized registry for dotfiles navigation & management.         │
+# │  [NOTE] Defines targets for 'edit', 'view', and 'goto' commands.           │
 # │                                                                            │
 # └────────────────────────────────────────────────────────────────────────────┘
 
@@ -13,14 +13,21 @@
 # ┌─── Configuration Data ─────────────────────────────────────────────────────┐
 
 # --- Dynamic Variables ---
-# [HELPER] Resolve paths dynamically to avoid hardcoding.
 local zen_paths=($HOME/.zen/*"Default (release)"(/N))
-local zen_profile_dir="${zen_paths[1]:-$HOME/.zen/default}"        # Fallback if not found
-local BIN="$HOME/.local/bin"
+local ZEN_PROFILE="${zen_paths[1]:-$HOME/.zen/default}"
+local BIN_DIR="$HOME/.local/bin"
+
+# [CACHE] Global cache to avoid rebuilding menu every time.
+typeset -g _METRO_MENU_CACHE=""
+
+# [ASSETS] Visual indicators (Exported for FZF subshell visibility)
+export METRO_ICON_FILE=""
+export METRO_ICON_DIR=""
+export METRO_ICON_CONF=""
 
 # --- Modules (Folders) ---
 # [INFO] Directories opened via file picker (edit) or tree view (view).
-typeset -A metro_modules
+typeset -gA metro_modules
 metro_modules=(
     [hypr]="$HYPR"
     [kitty]="$DOTS/kitty"
@@ -28,338 +35,290 @@ metro_modules=(
     [wofi]="$DOTS/wofi"
     [rofi]="$DOTS/rofi"
     [zsh]="$ZSH_CONFIG_DIR"
-    [scripts]="$BIN"
+    [scripts]="$BIN_DIR"
     [pyre]="$DOTS/pyre"
 )
 
 # --- Files (Direct Access) ---
 # [INFO] Specific files opened directly in the editor.
-typeset -A metro_files
+typeset -gA metro_files
 metro_files=(
-    # --- 1. Hyprland Core (System Logic) ---
-    [hyprconf]="$HYPR/hyprland.conf"                     # Main configuration entry point
-    [hyprbinds]="$HYPR/keybinds.conf"                    # Keybindings and input definitions
-    [hyprdecor]="$HYPR/decoration.conf"                  # Animations, blur, and decorations
-    [hyprrules]="$HYPR/rules.conf"                       # Window rules and workspace assignments
-    [hyprcolors]="$HYPR/colors.conf"                     # System-wide color palette
-    [hyprlock]="$HYPR/hyprlock.conf"                     # Lock screen configuration
-    [hypridle]="$HYPR/hypridle.conf"                     # Idle daemon configuration
+    # --- 1. Hyprland Core ---
+    [hyprconf]="$HYPR/hyprland.conf"                   # Main configuration entry point
+    [hyprbinds]="$HYPR/keybinds.conf"                  # Keybindings and input definitions
+    [hyprdecor]="$HYPR/decoration.conf"                # Animations, blur, and decorations
+    [hyprrules]="$HYPR/rules.conf"                     # Window rules and workspace assignments
+    [hyprcolors]="$HYPR/colors.conf"                   # System-wide color palette
+    [hyprlock]="$HYPR/hyprlock.conf"                   # Lock screen configuration
+    [hypridle]="$HYPR/hypridle.conf"                   # Idle daemon configuration
 
-    # --- 2. Desktop UI (Theming & Widgets) ---
+    # --- 2. Desktop UI ---
+    [wayconf]="$DOTS/waybar/config"                    # Bar layout and modules
+    [waystyle]="$DOTS/waybar/style.css"                # CSS styling and geometry
+    [waycolors]="$DOTS/waybar/colors.css"              # Bar-specific color variables
+    [woficonf]="$DOTS/wofi/config"                     # Launcher behavior and size
+    [wofistyle]="$DOTS/wofi/style.css"                 # Launcher CSS styling
+    [woficolors]="$DOTS/wofi/colors.css"               # Launcher color variables
+    [roficonf]="$DOTS/rofi/config.rasi"                # Rofi main config
+    [rofistyle]="$DOTS/rofi/style.rasi"                # Rofi styling
+    [roficolors]="$DOTS/rofi/colors.rasi"              # Rofi colors
+    [kittyconf]="$DOTS/kitty/kitty.conf"               # Terminal settings and fonts
+    [kittycolors]="$DOTS/kitty/colors.conf"            # Terminal color scheme
+    [dunstconf]="$DOTS/dunst/dunstrc"                  # Notification daemon config
 
-    # Waybar (Status Bar)
-    [wayconf]="$DOTS/waybar/config"                      # Bar layout and modules
-    [waystyle]="$DOTS/waybar/style.css"                  # CSS styling and geometry
-    [waycolors]="$DOTS/waybar/colors.css"                # Bar-specific color variables
+    # --- 3. Zsh Ecosystem ---
+    [zshrc]="$HOME/.zshrc"                             # Main entry point
+    [p10k]="$HOME/.p10k.zsh"                           # Powerlevel10k theme
+    [zshenv]="$ZSH_CONFIG_DIR/01_environment.zsh"      # 01. Environment & Path
+    [zshopts]="$ZSH_CONFIG_DIR/02_options.zsh"         # 02. Shell options & History
+    [zshplugs]="$ZSH_CONFIG_DIR/03_plugins.zsh"        # 03. Plugin manager
+    [zshfzf]="$ZSH_CONFIG_DIR/04_fzf.zsh"              # 04. FZF integration
+    [zshals]="$ZSH_CONFIG_DIR/05_aliases.zsh"          # 05. Command aliases
+    [zshfn]="$ZSH_CONFIG_DIR/06_functions.zsh"         # 06. Custom functions
+    [zshinit]="$ZSH_CONFIG_DIR/07_init.zsh"            # 07. Initialization sequence
 
-    # Wofi (App Launcher)
-    [woficonf]="$DOTS/wofi/config"                       # Launcher behavior and size
-    [wofistyle]="$DOTS/wofi/style.css"                   # Launcher CSS styling
-    [woficolors]="$DOTS/wofi/colors.css"                 # Launcher color variables
+    # --- 4. Apps & Tools ---
+    [fastfetch]="$DOTS/fastfetch/config.jsonc"         # Terminal fecth
+    [nvim]="$DOTS/nvim/lua/config/lazy.lua"            # Neovim plugin manager
+    [git]="$DOTS/lazygit/config.yml"                   # Git TUI interface
+    [mise]="$DOTS/mise/config.toml"                    # Runtime manager config
+    [clipse]="$DOTS/clipse/config.json"                # Clipboard history
+    [uair]="$DOTS/uair/uair.toml"                      # Pomodoro timer
+    [gammaconf]="$DOTS/gammastep/config.ini"           # Night light configuration
+    [fast]="$DOTS/fastfetch/config.jsonc"              # System information tool
+    [sampler]="$DOTS/sampler/sampler.yml"              # TUI System monitor
+    [cava]="$DOTS/cava/config"                         # Audio visualizer
+    [imv]="$DOTS/imv/config"                           # Image viewer
+    [userjs]="${ZEN_PROFILE}/user.js"                  # Browser hardening config
 
-    # Rofi (App Launcher)
-    [roficonf]="$DOTS/rofi/config.rasi"                  # Launcher behavior and size
-    [rofistyle]="$DOTS/rofi/style.rasi"                  # Launcher CSS styling
-    [roficolors]="$DOTS/rofi/colors.rasi"                # Launcher color variables
-
-
-    # Kitty (Terminal)
-    [kittyconf]="$DOTS/kitty/kitty.conf"                 # Terminal settings and fonts
-    [kittycolors]="$DOTS/kitty/colors.conf"              # Terminal color scheme
-
-    # Dunst (Notifications)
-    [dunstconf]="$DOTS/dunst/dunstrc"                    # Notification daemon config
-
-    # --- 3. Zsh Ecosystem (The Shell) ---
-
-    # Core & Entry Points
-    [zshrc]="$HOME/.zshrc"                               # Main entry point (loads modules)
-    [p10k]="$HOME/.p10k.zsh"                             # Powerlevel10k theme configuration
-
-    # Modules (Load Order 01-07)
-    [zshenv]="$ZSH_CONFIG_DIR/01_environment.zsh"        # 01. Environment & Path
-    [zshopts]="$ZSH_CONFIG_DIR/02_options.zsh"           # 02. Shell options & History
-    [zshplugs]="$ZSH_CONFIG_DIR/03_plugins.zsh"          # 03. Plugin manager
-    [zshfzf]="$ZSH_CONFIG_DIR/04_fzf.zsh"                # 04. FZF integration
-    [zshals]="$ZSH_CONFIG_DIR/05_aliases.zsh"            # 05. Command aliases
-    [zshfn]="$ZSH_CONFIG_DIR/06_functions.zsh"           # 06. Custom functions
-    [zshinit]="$ZSH_CONFIG_DIR/07_init.zsh"              # 07. Initialization sequence
-
-    # --- 4. Applications & Tools ---
-
-    # Development & Runtime
-    [nvim]="$DOTS/nvim/lua/config/lazy.lua"              # Neovim plugin manager
-    [git]="$DOTS/lazygit/config.yml"                     # Git TUI interface
-    [mise]="$DOTS/mise/config.toml"                      # Runtime manager config
-
-    # Productivity & Utils
-    [clipse]="$DOTS/clipse/config.json"                  # Clipboard history
-    [uair]="$DOTS/uair/uair.toml"                        # Pomodoro timer
-    [gammaconf]="$DOTS/gammastep/config.ini"             # Night light configuration
-
-    # Media & Visuals
-    [fast]="$DOTS/fastfetch/config.jsonc"                # System information tool
-    [sampler]="$DOTS/sampler/sampler.yml"
-    [cava]="$DOTS/cava/config"                           # Audio visualizer
-    [imv]="$DOTS/imv/config"                             # Image viewer
-
-    # Web
-    [userjs]="${zen_profile_dir}/user.js"                # Browser hardening config
-
-    # --- 5. System Configs (Root/Global) ---
-    [mime]="$HOME/.config/mimeapps.list"                 # Default application associations
-    [ssh]="$HOME/.ssh/config"                            # SSH hosts and keys
-    [keyd]="/etc/keyd/default.conf"                      # Low-level keyboard remapping
+    # --- 5. System Configs ---
+    [topgrade]="$DOTS/topgrade.toml"
+    [mime]="$HOME/.config/mimeapps.list"               # Default app associations
+    [ssh]="$HOME/.ssh/config"                          # SSH hosts and keys
+    [keyd]="/etc/keyd/default.conf"                    # Keyboard remapping
 
     # --- 6. Scripts ---
-
-    # Pyre Engine (My Framework)
-    [pyreconf]="$BIN/pyre"                               # Engine entry point
-    [pyrefn]="$HOME/.config/pyre/functions.sh"           # Engine library functions
-
-    # Hardware Control
-    [bright]="$BIN/brightness-manager"                   # Monitor brightness logic
-    [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"    # CPU power management
-
-    # --- 7. Meta ---
-    [gitig]="$HOME/.gitignore"                           # Global git ignore patterns
+    [pyreconf]="$BIN_DIR/pyre"                         # Engine entry point
+    [pyrefn]="$HOME/.config/pyre/functions.sh"         # Engine library functions
+    [bright]="$BIN_DIR/brightness-manager"             # Monitor brightness logic
+    [ryzen]="/usr/local/sbin/apply-ryzen-settings.sh"  # CPU power management
+    [gitig]="$HOME/.gitignore"                         # Global git ignore patterns
 )
 
 
 # ┌─── Internal Helpers ───────────────────────────────────────────────────────┐
 
 # --- Menu Generator ---
-# [INFO] Generates the formatted list for FZF once.
+# [INFO] Generates the formatted list for FZF. Uses cache for speed.
 _metro_build_menu() {
+    [[ -n "$_METRO_MENU_CACHE" ]] && { print -r -- "$_METRO_MENU_CACHE"; return; }
+
     local file_list
-    file_list=$(for key in "${(@k)metro_files}"; do 
-        printf "%-15s [File]   -> %s\n" "$key" "${metro_files[$key]:t}"
-    done | sort -k 4 -V)
+    file_list=$(for k in "${(@k)metro_files}"; do 
+        printf "%-15s %s  %s\n" "$k" "$METRO_ICON_FILE" "${metro_files[$k]:t}"
+    done | sort -k 3 -V)
 
     local module_list
-    module_list=$(for key in "${(@k)metro_modules}"; do 
-        printf "%-15s [Module] -> %s/\n" "$key" "${metro_modules[$key]:t}"
-    done | sort -k 4 -V)
+    module_list=$(for k in "${(@k)metro_modules}"; do 
+        printf "%-15s %s  %s/\n" "$k" "$METRO_ICON_DIR" "${metro_modules[$k]:t}"
+    done | sort -k 3 -V)
     
-    printf "p10k           [Action] -> Configure Powerlevel10k\n%s\n%s" "$file_list" "$module_list"
+    # [CACHE] Store the result
+    _METRO_MENU_CACHE=$(printf "p10k           %s  Configure Powerlevel10k\n%s\n%s" \
+        "$METRO_ICON_CONF" "$file_list" "$module_list")
+    
+    print -r -- "$_METRO_MENU_CACHE"
 }
 
-# --- Path Resolution ---
-# [INFO] Helper for FZF preview: turns an alias into a real path.
-_edit_resolve_path_for_preview() {
-    local alias="$1"
-    if [[ -v metro_files[$alias] ]]; then
-        echo "${metro_files[$alias]}"
-    elif [[ -v metro_modules[$alias] ]]; then
-        echo "${metro_modules[$alias]}"
+# --- Preview Resolver ---
+# [INFO] Used only inside FZF subshell via explicit injection.
+_metro_get_path() {
+    local key="$1"
+    if [[ -v metro_files[$key] ]]; then echo "${metro_files[$key]}"
+    elif [[ -v metro_modules[$key] ]]; then echo "${metro_modules[$key]}"
     fi
+}
+
+# --- Unified Interactive Selector ---
+# [INFO] Generic FZF launcher used by edit/view/goto.
+_metro_pick() {
+    local header="$1"
+    local filter="${2:-cat}"
+    
+    # 1. Dependency Resolution (Startup)
+    # [ARCH] Resolve absolute paths via Zsh 'commands' hash.
+    local _bat="${commands[bat]:-cat}"
+    local _eza="${commands[eza]:-ls}"
+
+    # 2. Context Serialization
+    # [CRITICAL] Pack arrays and the helper function.
+    local context="$(typeset -p metro_files metro_modules); $(typeset -f _metro_get_path)"
+    
+    # 3. Preview Logic (Injection)
+    # [NOTE] We inject the resolved variables ($_eza, $_bat) directly into the string.
+    local preview_cmd="
+        alias=\$(echo {} | cut -d' ' -f1);
+        path=\$(_metro_get_path \"\$alias\");
+        if [[ -d \"\$path\" ]]; then
+            $_eza --tree --level=2 --icons --group-directories-first \"\$path\";
+        elif [[ -f \"\$path\" ]]; then
+            $_bat --color=always --style=numbers --line-range :200 \"\$path\";
+        fi
+    "
+
+    # 4. Execution
+    _metro_build_menu | eval "$filter" | fzf \
+        --height=50% \
+        --layout=reverse \
+        --border=rounded \
+        --no-separator \
+        --preview-window="right:70%:border-rounded" \
+        --header="$header" \
+        --preview="$context; $preview_cmd"
 }
 
 # --- Module Selector ---
-# [INFO] Helper for 'edit': shows FZF menu for a specific folder.
+# [INFO] Sub-menu when editing a folder/module.
 _edit_module() {
     local module_path="$1"
     local selected_file
+    local cmd
 
-    selected_file=$(command find "$module_path" -maxdepth 2 -type f -not -name '.*' | \
-        fzf --header="Editing Module: ${module_path:t} — Select a file" \
-            --preview="bat --color=always --style=numbers --line-range :200 \"{}\"")
+    # [SAFETY] Guard against empty paths
+    [[ -z "$module_path" ]] && return 1
 
-    if [[ -n "$selected_file" ]]; then
-        z "${selected_file:h}" && $EDITOR "${selected_file:t}"
+    # 1. Dependency Resolution
+    local _fd="${commands[fd]:-find}"
+    local _bat="${commands[bat]:-cat}"
+
+    # 2. Search Strategy (FD vs Find)
+    if [[ "$_fd" == *"fd"* ]]; then
+        # [FD] Modern search. Note: We pass module_path as the target arg.
+        cmd="$_fd --type f --max-depth 2 --hidden --exclude .git --absolute-path . \"$module_path\""
+    else
+        # [FIND] POSIX fallback.
+        cmd="find \"$module_path\" -maxdepth 2 -type f -not -name '.*'"
     fi
+
+    # 3. Execution (with injected previewer)
+    selected_file=$(eval "$cmd" | \
+        fzf --height=50% \
+            --layout=reverse \
+            --border=rounded \
+            --header="Editing Module: ${module_path:t} — Select a file" \
+            --preview="$_bat --color=always --style=numbers --line-range :200 {}")
+
+    [[ -n "$selected_file" ]] && $EDITOR "$selected_file"
 }
 
 # --- Autocompletion ---
-# [INFO] Zsh completion logic for public commands.
 _metro_completion() {
     local -a matches
-    local key
-
-    # [LOGIC] Only show files if NOT using 'goto'
-    # 'goto' is strictly for directory navigation
     if [[ "$service" != "goto" ]]; then
-        for key in "${(@k)metro_files}"; do
-            matches+=("$key:[File] ${metro_files[$key]:t}")
+        for k in "${(@k)metro_files}"; do 
+            matches+=("$k:[File] ${metro_files[$k]:t}")
         done
-        matches+=("p10k:[Action] Configure Powerlevel10k")
+        matches+=("p10k:[Action] Configure P10k")
     fi
 
-    # [LOGIC] Modules are always relevant
-    for key in "${(@k)metro_modules}"; do
-        matches+=("$key:[Module] ${metro_modules[$key]:t}/")
+    for k in "${(@k)metro_modules}"; do 
+        matches+=("$k:[Module] ${metro_modules[$k]:t}/")
     done
-
     _describe 'metro config' matches
 }
 
 
 # ┌─── Public Commands ────────────────────────────────────────────────────────┐
 
-# --- Editor Interface ---
-# [INFO] The ultimate config file editor with FZF integration.
-# [EXAMPLE] edit hypr        # Opens module folder
-# [EXAMPLE] edit hyprconf    # Opens specific file
+# --- Edit (The Editor) ---
+# [USAGE] edit [alias | path]
 edit() {
-    # 1. CLI ARGUMENT MODE (Direct Access)
+    # 1. CLI ARGUMENT MODE
     if [[ -n "$1" ]]; then
-        local target_alias="$1"
-
-        # Case A: Powerlevel10k Special
-        if [[ "$target_alias" == "p10k" ]]; then
-            p10k configure
-            return 0
-        fi
-
-        # Case B: Direct File Match
-        if [[ -v metro_files[$target_alias] ]]; then
-            local f="${metro_files[$target_alias]}"
-            z "${f:h}" && $EDITOR "${f:t}"        # [OPTIMIZATION] Zsh Modifiers (:h/:t)
-            return 0
-        fi
+        local target="$1"
+        [[ "$target" == "p10k" ]] && { p10k configure; return 0; }
         
-        # Case C: Module Directory Match
-        if [[ -v metro_modules[$target_alias] ]]; then
-            _edit_module "${metro_modules[$target_alias]}"
+        # [LOGIC] Check Files (Direct Array Access)
+        if [[ -v metro_files[$target] ]]; then
+            local f="${metro_files[$target]}"
+            z "${f:h}" && $EDITOR "${f:t}"
             return 0
         fi
 
-        # Case D: Not Found (Error)
-        echo "Config not found: $target_alias"
+        # [LOGIC] Check Modules (Direct Array Access)
+        if [[ -v metro_modules[$target] ]]; then
+            _edit_module "${metro_modules[$target]}"
+            return 0
+        fi
+
+        echo "Config not found: $target"
         return 1
     fi
     
-    # 2. INTERACTIVE MODE (FZF Menu)
-    # [CRITICAL] Prepare data for the preview window subshell (Context Serialization)
-    local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
-    local selected_item
-
-    # [INFO] Launch FZF with detailed preview
-    selected_item=$(_metro_build_menu | fzf \
-        --header="Select a config file or module to edit" \
-        --preview="$data_to_pass; \
-            alias_to_preview=\$(echo {} | cut -d' ' -f1); \
-            path_to_preview=\$(_edit_resolve_path_for_preview \"\$alias_to_preview\"); \
-            if [[ -f \"\$path_to_preview\" ]]; then \
-                bat --color=always --style=numbers --line-range :200 \"\$path_to_preview\"; \
-            elif [[ -d \"\$path_to_preview\" ]]; then \
-                eza --tree --level=2 --icons \"\$path_to_preview\"; \
-            fi" \
-        --preview-window="right:55%:border-rounded")
-    
-    [[ -n "$selected_item" ]] && edit "${selected_item%% *}"
+    # 2. INTERACTIVE MODE
+    local selection
+    selection=$(_metro_pick "Select a config file or module to edit")
+    [[ -n "$selection" ]] && edit "${selection%% *}"
 }
 
-# --- Viewer Interface ---
-# [INFO] Preview config files or modules without opening editor.
-# [EXAMPLE] view hypr        # Shows tree view of folder
-# [EXAMPLE] view hyprconf    # Cats/Bats the file
-# [EXAMPLE] view -c hyprconf # Forces raw 'cat' output
+# --- View (The Viewer) ---
+# [USAGE] view [-c] [alias]
 view() {
     # 1. CLI ARGUMENT MODE
     if [[ -n "$1" ]]; then
-        local target_alias="$1"
-        # [OPTIMIZATION] Use an array for command arguments to avoid 'eval'
-        local viewer_cmd=(bat --paging=never --style=header,grid,numbers --color=always)
-
-        # [INFO] Flag handling: '-c' forces raw output (useful for piping)
-        if [[ "$1" == "-c" ]]; then
-            viewer_cmd=(bat --paging=never --style=plain --color=always)
-            shift
-            target_alias="$1"
+        local target="$1"
+        local opts=(--style=header,grid,numbers)
+        
+        if [[ "$1" == "-c" ]]; then 
+            opts=(--style=plain); shift; target="$1"
         fi
 
-        # Case A: File Match
-        if [[ -v metro_files[$target_alias] ]]; then
-            "${viewer_cmd[@]}" "${metro_files[$target_alias]}"
+        if [[ -v metro_files[$target] ]]; then
+            bat --paging=never "${opts[@]}" --color=always "${metro_files[$target]}"
             return 0
         fi
-        
-        # Case B: Module Match
-        if [[ -v metro_modules[$target_alias] ]]; then
-            eza --tree --level=5 --icons "${metro_modules[$target_alias]}"
+
+        if [[ -v metro_modules[$target] ]]; then
+            eza --tree --level=3 --icons "${metro_modules[$target]}"
             return 0
         fi
-        
-        # Case C: Not Found
-        echo "Config not found: $target_alias"
+
+        echo "Config not found: $target"
         return 1
     fi
     
-    # 2. INTERACTIVE MODE (FZF Menu)
-    # [CRITICAL] Context serialization for FZF preview
-    local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
-    local selected_item
-
-    # [INFO] Launch FZF with detailed preview
-    selected_item=$(_metro_build_menu | fzf \
-        --header="Select a config file or module to edit" \
-        --preview="$data_to_pass; \
-            alias_to_preview=\$(echo {} | cut -d' ' -f1); \
-            path_to_preview=\$(_edit_resolve_path_for_preview \"\$alias_to_preview\"); \
-            if [[ -f \"\$path_to_preview\" ]]; then \
-                bat --color=always --style=numbers --line-range :200 \"\$path_to_preview\"; \
-            elif [[ -d \"\$path_to_preview\" ]]; then \
-                eza --tree --level=2 --icons \"\$path_to_preview\"; \
-            fi" \
-        --preview-window="right:55%:border-rounded")
-
-    [[ -n "$selected_item" ]] && view "${selected_item%% *}"
+    # 2. INTERACTIVE MODE
+    local selection
+    selection=$(_metro_pick "View config content")
+    [[ -n "$selection" ]] && view "${selection%% *}"
 }
 
-# --- Navigator Interface ---
-# [INFO] Quickly 'cd' into a config directory.
-# [EXAMPLE] goto hypr        # cd ~/.config/hypr
-# [EXAMPLE] goto zshrc       # cd ~ (where .zshrc lives)
+# --- Goto (The Navigator) ---
+# [USAGE] goto [alias]
 goto() {
     # 1. CLI ARGUMENT MODE
     if [[ -n "$1" ]]; then
         local target="$1"
-
-        # Case A: File Match -> Jump to parent dir
-        if [[ -v metro_files[$target] ]]; then 
-            # [OPTIMIZATION] Jump to directory containing the file (:h)
+        
+        if [[ -v metro_files[$target] ]]; then
             z "${metro_files[$target]:h}"
             return 0
         fi
-        
-        # Case B: Module Match -> Jump to dir
-        if [[ -v metro_modules[$target] ]]; then 
+
+        if [[ -v metro_modules[$target] ]]; then
             z "${metro_modules[$target]}"
             return 0
         fi
-        
-        # Case C: Not Found
+
         echo "Config not found: $target"
         return 1
     fi
 
     # 2. INTERACTIVE MODE
-    # [CRITICAL] Context serialization (Required for preview to see variables)
-    local data_to_pass="$(typeset -p metro_files metro_modules); $(typeset -f _edit_resolve_path_for_preview)"
-    local selected_item
-
-    # [INFO] Interactive Selection
-    # [LOGIC] grep "\[Module\]" ensures we only show directories, not files
-    selected_item=$(_metro_build_menu | grep "\[Module\]" | fzf \
-        --header="Select a destination to GO TO" \
-        --preview="$data_to_pass; \
-            alias_to_preview=\$(echo {} | awk '{print \$1}'); \
-            path_to_preview=\$(_edit_resolve_path_for_preview \"\$alias_to_preview\"); \
-            if [[ -f \"\$path_to_preview\" ]]; then \
-                bat --color=always --style=numbers --line-range :200 \"\$path_to_preview\"; \
-            elif [[ -d \"\$path_to_preview\" ]]; then \
-                eza --tree --level=2 --icons \"\$path_to_preview\"; \
-            fi" \
-        --height=45% \
-        --layout=reverse \
-        --border=rounded \
-        --prompt="Goto > ")
-
-    # [OPTIMIZATION] Strip description and recurse
-    [[ -n "$selected_item" ]] && goto "${selected_item%% *}"
+    local selection
+    selection=$(_metro_pick "Select a destination to GO TO" "grep '$METRO_ICON_DIR'")
+    [[ -n "$selection" ]] && goto "${selection%% *}"
 }
-
 
 # ┌────────────────────────────────────────────────────────────────────────────┐
 # │                       Interactive Shell Enhancements                       │
@@ -377,10 +336,8 @@ magic-enter() {
         return
     fi
 
-    # Happy Path: Buffer is empty, run magic
     local cmd="eza --icons --group-directories-first --git"
     
-    # [CHECK] Use 'command git' to bypass aliases/wrappers for speed
     if command git status --porcelain &>/dev/null; then
         cmd="$cmd && git status -sb"
     fi
@@ -459,7 +416,7 @@ fin() {
     selection=$(rg --no-heading --line-number --color=always -i "" "$file" | fzf \
         --ansi \
         --delimiter=: \
-        --header="🔍 $file — Fuzzy-search" \
+        --header="$file — Fuzzy-search" \
         --height=30% \
         --layout=reverse \
         --border=rounded \
@@ -498,7 +455,7 @@ cht() {
 serve() {
     local port="${1:-8000}"
     echo "Serving current directory on http://localhost:$port"
-    python -m http.server "$port"
+    python -m http.server "$port" --bind 127.0.0.1
 }
 
 # --- Vencord ---
@@ -573,17 +530,131 @@ bak() {
     cp -iv "$1" "$1.bak.$(date +'%Y%m%d-%H%M%S')"
 }
 
-# --- Clipboard Copy ---
-# [INFO] Wayland-native clipboard copy.
+# --- Clipboard Wrapper ---
+# [INFO] Universal copier: handles Pipes, Files, and Arguments.
+# [FEAT] Strips ANSI colors automatically.
+# [USAGE] echo "col" | copy  (Pipe)
+# [USAGE] copy file.txt      (File)
+# [USAGE] copy "text"        (String)
 copy() {
-    # Guard: Check dependency first
-    if ! command -v wl-copy >/dev/null 2>&1; then
-        echo "Error: wl-copy not found (are you on Wayland?)." >&2
+    # 1. Backend Detection
+    # [NOTE] Checks for Wayland > X11 > macOS
+    local clip_cmd
+    if   (( $+commands[wl-copy] )); then clip_cmd="wl-copy"
+    elif (( $+commands[xclip] ));   then clip_cmd="xclip -selection clipboard"
+    elif (( $+commands[pbcopy] ));  then clip_cmd="pbcopy"
+    else
+        echo "[Error] No clipboard utility found." >&2
         return 1
     fi
 
-    # Happy Path
-    sed 's/\x1b\[[0-9;]*m//g' | wl-copy
+    # 2. Input Strategy
+    # [LOGIC] If args exist: checks if file or string. If no args: reads stdin.
+    if [[ -n "$1" ]]; then
+        if [[ -f "$1" ]]; then
+            # Case A: File
+            cat "$1" | sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
+        else
+            # Case B: String Argument (print -n avoids trailing newline)
+            print -rn -- "$*" | sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
+        fi
+    else
+        # Case C: Stdin (Pipe)
+        sed 's/\x1b\[[0-9;]*m//g' | eval "$clip_cmd"
+    fi
+
+    # 3. User Feedback
+    # [UX] Print to stderr so it doesn't break pipe chains
+    if [[ $? -eq 0 ]]; then
+        print -P "%F{green}✔%f Copied to clipboard." >&2
+    fi
+}
+
+
+# ┌─── Media & AI ─────────────────────────────────────────────────────────────┐
+
+# --- AI Transcriber ---
+# [INFO] Downloads audio from URL and transcribes it using local Whisper.
+# [NOTE] Auto-switches to CPU if model is too heavy for standard GPUs.
+# [UI] Displays metadata card + native download progress (Speed/ETA).
+# [USAGE] vid2txt <url> [model: small|medium]
+vid2txt() {
+    # 1. Validation
+    if [[ -z "$1" ]]; then
+        echo "Usage: vid2txt <url> [model]"
+        return 1
+    fi
+
+    # 2. Dependency Check
+    # [INFO] Ensure core tools exist before execution
+    (( $+commands[yt-dlp] ))  || { echo "Error: 'yt-dlp' not found."; return 1; }
+    (( $+commands[whisper] )) || { echo "Error: 'whisper' not found."; return 1; }
+
+    local url="$1"
+    local model="${2:-small}"
+    local device="cuda"
+
+    # 3. Hardware Logic
+    # [HARDWARE] GTX 1650 Limit: 'medium' requires ~5GB VRAM
+    if [[ "$model" == "medium" || "$model" == "large" ]]; then
+        print -P "%F{yellow}[!] Model '$model' exceeds VRAM limits. Switching to CPU mode.%f"
+        device="cpu"
+    fi
+
+    # 4. Metadata Fetching
+    print -P "%F{blue}>> Connecting to stream...%f"
+
+    # [NOTE] Retrieve metadata in single pass
+    local meta
+    meta=("${(@f)$(yt-dlp --print "%(title)s" --print "%(uploader)s" --print "%(duration_string)s" "$url" 2>/dev/null)}")
+
+    local raw_title="${meta[1]}"
+    local uploader="${meta[2]:-Unknown}"
+    local duration="${meta[3]:-N/A}"
+
+    # [FALLBACK] Generate timestamp title if metadata fails
+    [[ -z "$raw_title" ]] && raw_title="Transcription $(date +%s)"
+
+    local clean_title
+    clean_title=$(echo "$raw_title" | sed 's/[^a-zA-Z0-9а-яА-Я ]//g' | tr ' ' '_')
+
+    local tmp_audio="/tmp/${clean_title}.wav"
+
+    # 5. UI: Info Card
+    echo ""
+    print -P "%F{237}┌── %F{white}Media Info %F{237}────────────────────────────────────────────────┐%f"
+    print -P "%F{237}│%f  Title:    %F{cyan}${raw_title:0:60}...%f"
+    print -P "%F{237}│%f  Channel:  %F{cyan}$uploader%f"
+    print -P "%F{237}│%f  Length:   %F{cyan}$duration%f"
+    print -P "%F{237}└──────────────────────────────────────────────────────────────┘%f"
+    echo ""
+
+    # 6. Execution Pipeline
+    # [FFMPEG] Force 16kHz mono for Whisper native format
+    yt-dlp -x \
+        --audio-format wav \
+        --postprocessor-args "-ar 16000 -ac 1" \
+        --output "$tmp_audio" \
+        --no-warnings \
+        --progress \
+        "$url"
+
+    echo ""
+    print -P "%F{magenta}[AI] Transcribing ($model on $device / FP32)...%f"
+
+    whisper "$tmp_audio" \
+        --model "$model" \
+        --device "$device" \
+        --output_format txt \
+        --output_dir . \
+        --verbose False \
+        --fp16 False
+
+    # 7. Cleanup
+    mv "${clean_title}.txt" "${clean_title}_subs.txt" 2>/dev/null
+    command rm -f "$tmp_audio"
+
+    print -P "%F{green}[OK] Saved:%f ${clean_title}_subs.txt"
 }
 
 
@@ -593,7 +664,7 @@ copy() {
 # [INFO] The primary engine for managing the bare repository (~/.dotfiles).
 # [NOTE] Serves as the backend for all 'd*' aliases (dstat, dadd, dpush).
 dotgit() {
-    /usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
+    command git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
 }
 
 # --- Dotfiles Doctor ---
@@ -612,7 +683,7 @@ dfd() {
         echo "└────────────────────────────────────────────────────────────────┘"
         echo "  Use 'dadd <path>' to secure them."
     else
-        echo "✨ All critical dotfiles are tracked."
+        echo "All critical dotfiles are tracked."
     fi
 }
 
@@ -626,7 +697,7 @@ dcf() {
     # [CHECK] Get status
     local changed_files
     changed_files=$(dotgit status --porcelain)
-    [[ -z "$changed_files" ]] && { echo "✨ No changes found in dotfiles."; return 0; }
+    [[ -z "$changed_files" ]] && { echo "No changes found in dotfiles."; return 0; }
 
     local file
     # [CORE] Clean Selection Logic
