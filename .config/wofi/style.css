@@ -1,104 +1,82 @@
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                         WOFI - STYLE CONFIGARATION                         │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── Configuration ─────────────────────────────────────────────────────────┐ */
+/* │                           MODERN WOFI THEME                               │ */
+/* └───────────────────────────────────────────────────────────────────────────┘ */
 
-/* --- Theme Import --- */
 @import "/home/x8u/.config/wofi/colors.css";
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                                Global Styles                               │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-* {
-    font-family: "JetBrains Mono Nerd Font", sans-serif;
-    font-size: 16px;
+/* --- Window Structure --- */
+window {
+    background-color: @base;
+    border: 2px solid @lavender;
+    border-radius: 16px;
+    font-family: "JetBrains Mono Nerd Font", monospace;
+    font-size: 14px;
+}
+
+/* --- Layout Container --- */
+#outer-box {
+    margin: 5px;
+    padding: 10px;
+    background-color: transparent;
+}
+
+/* --- Search Input (Floating Style) --- */
+#input {
+    margin: 5px;
+    padding: 12px;
+    border-radius: 12px;
+    background-color: @mantle;
     color: @text;
     border: none;
-}
-
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                                 Main Window                                │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-#window {
-    width: 650px;
-    max-height: 460px;
-    background-color: @mantle;
-    border-radius: 18px;
-    border: 2px solid @lavender;
-}
-
-#outer-box {
-    padding: 20px;
-}
-
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                                Input Field                                 │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-#input {
-    background-color: @surface0;
-    padding: 12px 18px;
-    margin-bottom: 15px;
-    border-radius: 12px;
-    caret-color: @lavender;
-    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: none;
+    margin-bottom: 20px;
 }
 
 #input:focus {
-    box-shadow: 0 0 0 2px @lavender;
-    outline: none;
+    border: 1px solid @overlay0;
+    box-shadow: 0 0 3px 1px @surface0;
 }
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                         Results List & Separators                          │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* --- Results List --- */
+#scroll {
+    margin-top: 5px;
+    border: none;
+}
+
+/* --- Entries (The Pills) --- */
 #entry {
+    margin: 0px 5px 5px 5px;
     padding: 10px 15px;
-    margin-bottom: 10px;
     border-radius: 10px;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    background-color: transparent;
+    color: @text;
+    transition: all 0.15s ease-in-out;
 }
 
-#entry:not(:selected) {
-    border-bottom: 1px solid transparent;
-    border-image: linear-gradient(to right, @base, @surface0, @base) 1;
-}
-
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                          Hover & Selected Effects                          │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-#entry:hover {
-    background-color: @surface0;
-}
-
+/* --- Active State (Critical Contrast) --- */
 #entry:selected {
     background-color: @lavender;
-    color: @base;
 }
 
-#entry image {
-    margin-right: 15px;
-    font-size: 22px;
+#entry:selected label {
+    color: @base;
+    font-weight: bold;
 }
 
 #entry:selected image {
-    color: @base;
+    -gtk-icon-transform: scale(1.1);
 }
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                                  Scrollbar                                 │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-scrollbar {
+/* --- Icons --- */
+#img {
+    margin-right: 12px;
     background-color: transparent;
-    border-radius: 8px;
 }
 
-scrollbar slider {
+/* --- Scrollbar (Minimalist) --- */
+#scroll slider {
     background-color: @surface1;
-    border-radius: 8px;
-    min-width: 8px;
+    border-radius: 50px;
     min-height: 20px;
-    transition: background-color 0.2s ease-in-out;
-}
-
-scrollbar slider:hover {
-    background-color: @surface2;
+    min-width: 4px;
 }
