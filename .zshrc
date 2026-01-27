@@ -5,25 +5,37 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                           ZSH - MAIN ENTRY POINT                           │
-# └────────────────────────────────────────────────────────────────────────────┘
-# [INFO] This file sources all other configuration parts.
-# Keep it clean and only add sourcing logic here.
 
-# [CONFIG] Path to the Zsh configuration directory.
+# ┌─── ZSH Main Entry Point ───────────────────────────────────────────────────┐
+# │  [INFO] The Hub: Orchestrates the loading of the configuration system.
+# └────────────────────────────────────────────────────────────────────────────┘
+
+# [CFG] Configuration Root
 export ZSH_CONFIG_DIR="$HOME/.config/zsh"
 
-# [INFO] Source all .zsh files from the config directory.
-# The numeric prefixes ensure they are loaded in the correct sequence.
-for config_file in "$ZSH_CONFIG_DIR"/*.zsh; do
+
+# ┌── 1. Core Loader (10-70) ──────────────────────────────────────────────────┐
+
+# [FLOW] Source numbered config files in sequence (10_env -> 70_init)
+for config_file in "$ZSH_CONFIG_DIR/"(10|20|30|40|50|60|70)_*.zsh(N); do
   source "$config_file"
 done
 
-# [INFO] Clean up to avoid polluting the shell environment.
-unset config_file
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# ┌── 2. Apps Loader ──────────────────────────────────────────────────────────┐
+
+# [FLOW] Load standalone applications from 'apps/' directory (e.g., vid2txt)
+if [[ -d "$ZSH_CONFIG_DIR/apps" ]]; then
+    for app in "$ZSH_CONFIG_DIR/apps"/*.zsh(N); do
+        source "$app"
+    done
+fi
+
+
+# ┌── 3. Finalization ─────────────────────────────────────────────────────────┐
+
+# [OPT] Clean up loader variables
+unset config_file app
+
+# [CFG] Load Powerlevel10k theme
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-export PATH=$PATH:/home/x8u/.spicetify
