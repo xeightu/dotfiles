@@ -64,7 +64,7 @@
 .config/spicetify/config-xpui.ini
 .config/gtk-3.0/bookmarks
 .config/btop/
-.config/cava/
+!/.config/cava/
 
 # --- System & GUI ---
 !/.config/gtk-3.0/
