@@ -1,30 +1,25 @@
-# ┌─── 6. Functions (The Loader) ──────────────────────────────────────────────┐
-# │  [INFO] Central hub for loading the internal function library.             │
-# │  [FLOW] registry.zsh is the critical dependency.                           │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Core Dependency (Registry) ──────────────────────────────────────────┐
 
+_LIB_DIR="${ZSH_CONFIG_DIR:-$HOME/.config/zsh}/lib"
 
-ZSH_LIB_DIR="$HOME/.config/zsh/lib"
-
-
-# ┌── 6.1. Critical Dependency (Registry) ─────────────────────────────────────┐
-
-# [FLOW] Load The Registry first. If it fails, stop loading to prevent crashes.
-if [[ -f "$ZSH_LIB_DIR/registry.zsh" ]]; then
-    source "$ZSH_LIB_DIR/registry.zsh"
-else
-    print -P "%F{9}[CRIT] Function library registry missing!%f"
-    return 1 # [FLOW] Fail-fast exit
+# [WARN] Fail-fast if the registry is missing to prevent critical shell errors
+if [[ ! -r "$_LIB_DIR/registry.zsh" ]]; then
+    print -P "%F{red}[CRIT] Function library registry missing at $_LIB_DIR!%f" >&2
+    return 1
 fi
 
+source "$_LIB_DIR/registry.zsh"
 
-# ┌── 6.2. Domain Modules (Spokes) ────────────────────────────────────────────┐
 
-# [FLOW] Iterate and load all logic spokes (metro, tools, dotfiles).
-for module in "$ZSH_LIB_DIR"/(metro|tools|dotfiles).zsh(N); do
-    source "$module"
+# ┌─── 2. Module Loader (Spokes) ──────────────────────────────────────────────┐
+
+# [NOTE] Dynamically source all .zsh modules; (N) prevents errors if empty
+for _mod in "$_LIB_DIR"/*.zsh(N); do
+    # Skip the registry as it is already sourced above
+    [[ "$_mod" == *"registry.zsh" ]] && continue
+    
+    source "$_mod"
 done
 
-
-# [OPT] Clean up local loader variable
-unset ZSH_LIB_DIR
+# Clean up internal variables to prevent global scope pollution
+unset _LIB_DIR _mod
