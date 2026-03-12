@@ -1,24 +1,37 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-for dir in /sys/class/hwmon/hwmon*; do
-  if [ -f "$dir/name" ] && read -r name <"$dir/name"; then
-    if [ "$name" = "k10temp" ]; then
-      if [ -f "$dir/temp1_input" ] && read -r temp_raw <"$dir/temp1_input"; then
-        temp_c=$((temp_raw / 1000))
+# ┌─── 1. Sensor Discovery & Parsing ──────────────────────────────────────────┐
 
-        if [ "$temp_c" -ge 80 ]; then
-          icon=""
-        elif [ "$temp_c" -ge 60 ]; then
-          icon=""
+# [NOTE] Specifically targeting k10temp driver for AMD CPU monitoring
+for _dir in /sys/class/hwmon/hwmon*; do
+  if [[ -f "$_dir/name" ]]; then
+    read -r _name <"$_dir/name"
+
+    if [[ "$_name" == "k10temp" ]]; then
+      if [[ -f "$_dir/temp1_input" ]]; then
+        read -r _temp_raw <"$_dir/temp1_input"
+        _temp_c=$((_temp_raw / 1000))
+
+        # ┌─── 2. Icon Logic & UI Output ──────────────────────────────┐
+
+        if ((_temp_c >= 80)); then
+          _icon=""
+        elif ((_temp_c >= 60)); then
+          _icon=""
         else
-          icon=""
+          _icon=""
         fi
 
-        printf '{"text": "%s %d°C", "tooltip": "CPU Temperature (k10temp): %d°C"}\n' "$icon" "$temp_c" "$temp_c"
+        # [NOTE] Output JSON structure for Waybar compatibility
+        printf '{"text": "%s %d°C", "tooltip": "CPU Temperature: %d°C"}\n' \
+          "$_icon" "$_temp_c" "$_temp_c"
         exit 0
       fi
     fi
   fi
 done
 
+# ┌─── 3. Fallback ────────────────────────────────────────────────────────────┐
+
+# [NOTE] Triggered if the k10temp module is not loaded or path differs
 echo '{"text": " ??", "tooltip": "Sensor k10temp not found"}'
