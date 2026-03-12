@@ -1,14 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌─── Master Autoclicker Controller ──────────────────────────────────────────┐
-# │ Orchestrates all sub-clickers.                                             │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Configuration & Constants ───────────────────────────────────────────┐
 
+# [NOTE] Resolve absolute path to ensure sub-scripts are found regardless of CWD
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MASTER_PID="/tmp/clicker_master.pid"
 
-# [CONFIG] Targets (Type -> Script Args)
-# Now we call the same script with different args
+# Mapping of automation modules to their respective script arguments
 declare -A TARGETS=(
   ["left"]="mouse.sh left"
   ["right"]="mouse.sh right"
@@ -16,53 +14,53 @@ declare -A TARGETS=(
   ["keyboard"]="keyboard.sh"
 )
 
-# ┌─── Helper: Kill Child ─────────────────────────────────────────────────────┐
-kill_child() {
-  local type="$1"
-  local pid_file="/tmp/clicker_${type}.pid"
+# ┌─── 2. Internal Process Management ─────────────────────────────────────────┐
 
-  if [ -f "$pid_file" ]; then
-    local pid
-    pid=$(cat "$pid_file")
-    # Check if process exists before killing
-    if kill -0 "$pid" 2>/dev/null; then
-      kill "$pid"
-    fi
-    rm -f "$pid_file"
+# [NOTE] Aggressive cleanup logic to ensure all child processes are terminated
+_kill_module() {
+  local _type="$1"
+  local _pid_file="/tmp/clicker_${_type}.pid"
+
+  if [[ -f "$_pid_file" ]]; then
+    local _pid
+    _pid=$(<"$_pid_file")
+    # [FIX] Kill children (ydotool) and the parent loop shell
+    pkill -P "$_pid" 2>/dev/null
+    kill -9 "$_pid" 2>/dev/null
+    rm -f "$_pid_file"
   fi
 }
 
-# ┌─── Main Logic ─────────────────────────────────────────────────────────────┐
+# ┌─── 3. Execution Controller (Master Toggle) ────────────────────────────────┐
 
-if [ -f "$MASTER_PID" ]; then
-
-  # --- Global OFF ---
-
-  for type in "${!TARGETS[@]}"; do
-    kill_child "$type"
+if [[ -f "$MASTER_PID" ]]; then
+  # --- Global Deactivation ---
+  for _type in "${!TARGETS[@]}"; do
+    _kill_module "$_type"
   done
 
   rm -f "$MASTER_PID"
-  notify-send "Master Clicker: OFF" -i "process-stop" -u "critical" -t 1000
-
+  notify-send "Automation" "Master Controller: OFF" -i "process-stop" -u low -t 1000
 else
+  # --- Global Activation ---
 
-  # --- Global ON ---
-
-  notify-send "Master Clicker: ALL ON" -i "weather-storm" -u "critical" -t 1000
-
-  # Clean stale locks first
-  for type in "${!TARGETS[@]}"; do
-    kill_child "$type"
+  # [NOTE] Pre-flight cleanup ensures we start from a clean state without duplicates
+  for _type in "${!TARGETS[@]}"; do
+    _kill_module "$_type"
   done
 
-  # Launch everything
-  for args in "${TARGETS[@]}"; do
-    # Split script name and args
-    read -r script arg <<<"$args"
-    "$SCRIPT_DIR/$script" $arg >/dev/null 2>&1 &
+  # Spawn all registered modules in background
+  for _key in "${!TARGETS[@]}"; do
+    read -r _script _arg <<<"${TARGETS[$_key]}"
+    _full_path="$SCRIPT_DIR/$_script"
+
+    if [[ -x "$_full_path" ]]; then
+      "$_full_path" "$_arg" >/dev/null 2>&1 &
+    else
+      notify-send "Automation" "Error: Module $_script not found" -u critical -i "error"
+    fi
   done
 
   touch "$MASTER_PID"
-
+  notify-send "Automation" "Master Controller: ALL ON" -i "weather-storm" -u critical -t 1000
 fi
