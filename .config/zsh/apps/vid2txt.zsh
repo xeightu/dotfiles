@@ -1,101 +1,130 @@
-# ┌─── 1. Metadata & Description ──────────────────────────────────────────────┐
-# │  [NAME] vid2txt (AI Transcriber)                                           │
-# │  [INFO] Downloads media and transcribes it via local OpenAI Whisper.       │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Configuration ───────────────────────────────────────────────────────┐
+
+DEFAULT_MODEL="small"
+# [NOTE] Fallback to CPU for large models to avoid OOM on limited VRAM (GTX 1650)
+CPU_MODELS=("medium" "large")
+
+# Mocha-inspired UI Colors
+UI_COLOR_BORDER="%F{111}"
+UI_COLOR_TEXT="%F{15}"
+UI_COLOR_LABEL="%B%F{183}"
 
 
-# ┌─── 2. Configuration ───────────────────────────────────────────────────────┐
-
-DEFAULT_MODEL="small"                           # [CFG] Standard model for balanced speed/accuracy
-CPU_MODELS=("medium" "large")                   # [CFG] Models that trigger CPU fallback for VRAM safety
-UI_COLOR_BORDER="%F{6}"                         # [CFG] Cyan border
-UI_COLOR_TEXT="%F{15}"                          # [CFG] White values
-UI_COLOR_LABEL="%B%F{12}"                       # [CFG] Bold blue labels
-
-
-# ┌─── 3. Internal Helpers ────────────────────────────────────────────────────┐
+# ┌─── 2. Internal Helpers ────────────────────────────────────────────────────┐
 
 _vid2txt_render_box() {
-    local title="$1"                            # Source title
-    local uploader="$2"                         # Channel name
-    local target="$3"                           # Final filename
+    local _title="$1" _uploader="$2" _target="$3"
+    local _max_w=40
 
-    # [OPT] Calculate dynamic width based on content (min 40, max 70)
-    local max_w=40
-    for str in "$title" "$uploader" "$target"; do (( ${#str} > max_w )) && max_w=${#str}; done
-    (( max_w > 70 )) && max_w=70
+    for _str in "$_title" "$_uploader" "$_target"; do 
+        (( ${#_str} > _max_w )) && _max_w=${#_str}
+    done
+
+    (( _max_w > 70 )) && _max_w=70
     
-    local hr_top="┌$(printf "─%.0s" {1..$((max_w + 12))})┐"
-    local hr_bot="└$(printf "─%.0s" {1..$((max_w + 12))})┘"
+    local _hr_top="┌$(printf "─%.0s" {1..$((_max_w + 12))})┐"
+    local _hr_bot="└$(printf "─%.0s" {1..$((_max_w + 12))})┘"
     
-    # [FLOW] Draw UI with smart truncation
-    print -P "${UI_COLOR_BORDER}${hr_top}%f"
-    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Source:%f  ${UI_COLOR_TEXT}${title:0:$max_w}%f"
-    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Channel:%f ${UI_COLOR_TEXT}${uploader:0:$max_w}%f"
-    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Target:%f  ${UI_COLOR_TEXT}${target}%f"
-    print -P "${UI_COLOR_BORDER}${hr_bot}%f"
+    print -P "${UI_COLOR_BORDER}${_hr_top}%f"
+    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Source:%f  ${UI_COLOR_TEXT}${_title:0:$_max_w}%f"
+    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Channel:%f ${UI_COLOR_TEXT}${_uploader:0:$_max_w}%f"
+    print -P "${UI_COLOR_BORDER}│%f ${UI_COLOR_LABEL}Target:%f  ${UI_COLOR_TEXT}${_target}%f"
+    print -P "${UI_COLOR_BORDER}${_hr_bot}%f"
 }
 
 
-# ┌─── 4. Core Logic (Main) ───────────────────────────────────────────────────┐
+# ┌─── 3. Core Logic ──────────────────────────────────────────────────────────┐
 
 vid2txt() {
-    # [FLOW] Pre-execution checks
-    if [[ -z "$1" ]]; then print -P "%F{yellow}Usage: vid2txt <url_or_path> [model]"; return 1; fi
-    
-    # [FIX] Bypass potential aliases for core utilities
-    local deps=("yt-dlp" "whisper" "ffmpeg" "md5sum");
-    for cmd in $deps; do (( $+commands[$cmd] )) || { print -P "%F{red}Error: '$cmd' not found."; return 1; }; done
+    local _input_src="$1"
+    local _ai_model="${2:-$DEFAULT_MODEL}"
 
-    local input_src="$1"
-    local ai_model="${2:-$DEFAULT_MODEL}"
-    local compute_device="cuda"
-    local session_id="v2t_${RANDOM}"
-    local tmp_audio="/tmp/${session_id}.wav"
+    # Input validation
+    if [[ -z "$_input_src" ]]; then
+        print -nP "${UI_COLOR_BORDER}Input URL or Path > %f"
+        read -r _input_src
+        [[ -z "$_input_src" ]] && { print -P "%F{203}Cancelled.%f"; return 1; }
+    fi
 
-    # [FLOW] Hardware capability routing
-    for m in $CPU_MODELS; do [[ "$ai_model" == "$m"* ]] && compute_device="cpu"; done # [FIX] Prevent VRAM OOM
+    # Dependency check
+    local _deps=("yt-dlp" "whisper" "ffmpeg" "md5sum")
+    for _cmd in $_deps; do 
+        (( $+commands[$_cmd] )) || { print -P "%F{203}Error: '$_cmd' not found.%f"; return 1; }
+    done
 
-    # [FLOW] Fetch metadata and build naming
-    local raw_title uploader
-    if [[ "$input_src" =~ "^https?://" ]]; then
-        local meta=("${(@f)$(yt-dlp --print "%(title)s" --print "%(uploader)s" "$input_src" 2>/dev/null)}")
-        raw_title="${meta[1]:-Stream_${session_id}}"; uploader="${meta[2]:-Unknown}"
+    # Device selection logic
+    local _compute_device="cuda"
+    for _m in $CPU_MODELS; do 
+        [[ "$_ai_model" == "$_m"* ]] && _compute_device="cpu"
+    done
+
+    # Session initialization
+    local _session_id="v2t_${RANDOM}"
+    local _tmp_audio="/tmp/${_session_id}.wav"
+    local _gen_txt="/tmp/${_session_id}.txt"
+    local _fall_txt="/tmp/${_session_id}.wav.txt"
+
+    # [FIX] Comprehensive cleanup on exit or interruption
+    trap 'command rm -f "$_tmp_audio" "$_gen_txt" "$_fall_txt" 2>/dev/null' EXIT INT TERM
+
+    # --- Phase 1: Metadata Acquisition ---
+    local _raw_title _uploader
+    if [[ "$_input_src" =~ "^https?://" ]]; then
+        local _meta=("${(@f)$(yt-dlp --print "%(title)s" --print "%(uploader)s" "$_input_src" 2>/dev/null)}")
+        _raw_title="${_meta[1]:-Stream_${_session_id}}"
+        _uploader="${_meta[2]:-Unknown}"
     else
-        raw_title=$(basename "${input_src%.*}"); uploader="Local_Storage"
+        _raw_title=$(basename "${_input_src%.*}")
+        _uploader="Local_Storage"
     fi
 
-    # [OPT] Minimalist naming strategy: _[hash].txt
-    local hash_id=$(echo -n "$input_src" | md5sum | cut -c1-7); local target_file="_${hash_id}.txt"
+    local _hash_id=$(echo -n "$_input_src" | md5sum | cut -c1-7)
+    local _target_file="_${_hash_id}.txt"
 
-    # [FLOW] UI Entry Point
-    echo ""; _vid2txt_render_box "$raw_title" "$uploader" "$target_file"; echo ""
+    echo ""
+    _vid2txt_render_box "$_raw_title" "$_uploader" "$_target_file"
+    echo ""
 
-    # [FLOW] Audio extraction pipeline
-    if [[ "$input_src" =~ "^https?://" ]]; then
-        yt-dlp -x --audio-format wav --postprocessor-args "-ar 16000 -ac 1" --output "$tmp_audio" --no-warnings --progress "$input_src"
+    # --- Phase 2: Audio Extraction ---
+    local _t_start _t_end
+    _t_start=$(date +%s)
+    print -P "%F{117}[1/3] Fetching video and extracting audio...%f"
+
+    if [[ "$_input_src" =~ "^https?://" ]]; then
+        yt-dlp -x --audio-format wav --postprocessor-args "-ar 16000 -ac 1" \
+            --output "$_tmp_audio" --no-warnings --progress "$_input_src"
     else
-        ffmpeg -i "$input_src" -ar 16000 -ac 1 "$tmp_audio" -y -hide_banner -loglevel error
+        ffmpeg -i "$_input_src" -ar 16000 -ac 1 "$_tmp_audio" -y -hide_banner -loglevel error
     fi
-    [[ ! -f "$tmp_audio" ]] && { print -P "%F{9}[CRIT] Extraction failed.%f"; return 1; }
 
-    # [FLOW] AI Transcription engine
-    print -P "%F{13}[AI] Transcribing ($ai_model on $compute_device / FP32)...%f"
+    [[ ! -f "$_tmp_audio" ]] && { print -P "%F{203}[CRIT] Extraction failed.%f"; return 1; }
     
-    # [FIX] FP16 False prevents 'NaN' errors on consumer-grade NVIDIA drivers
-    whisper "$tmp_audio" --model "$ai_model" --device "$compute_device" --output_format "txt" --output_dir "/tmp" --verbose False --fp16 False
+    _t_end=$(date +%s)
+    print -P "%F{114}[OK] Audio ready (%f$((_t_end-_t_start))s%F{114}) → %f$_tmp_audio"
 
-    # [FLOW] Finalization & Cleanup
-    local gen_txt="/tmp/${session_id}.txt"; local fall_txt="/tmp/$(basename ${tmp_audio%.wav}).txt"; local target_path="./$target_file"
+    # --- Phase 3: Transcription ---
+    print -P "%F{117}[2/3] Transcribing with model '%F{183}$_ai_model%F{117}' on '%F{183}$_compute_device%F{117}'...%f"
+    _t_start=$(date +%s)
+    
+    # [NOTE] FP16 disabled for better compatibility with diverse CUDA compute caps
+    whisper "$_tmp_audio" --model "$_ai_model" --device "$_compute_device" \
+            --output_format "txt" --output_dir "/tmp" --verbose False --fp16 False
+    
+    _t_end=$(date +%s)
 
-    if [[ -f "$gen_txt" ]]; then command mv "$gen_txt" "$target_path"
-    elif [[ -f "$fall_txt" ]]; then command mv "$fall_txt" "$target_path"
+    # --- Phase 4: Finalization ---
+    local _target_path="./$_target_file"
+    if [[ -f "$_gen_txt" ]]; then 
+        command mv "$_gen_txt" "$_target_path"
+    elif [[ -f "$_fall_txt" ]]; then 
+        command mv "$_fall_txt" "$_target_path"
     fi
 
-    # [CRIT] Clean temporary artifacts (using command to bypass aliases like 'rip')
-    command rm -f "$tmp_audio" "$fall_txt" "$gen_txt" 2>/dev/null
-
-    if [[ -f "$target_path" ]]; then print -P "%F{10}[OK] Results saved to:%f $target_file"
-    else print -P "%F{9}[CRIT] Process failed: Result file not found.%f"
+    if [[ -f "$_target_path" ]]; then
+        local _size_kb=$(command du -k "$_target_path" | command cut -f1)
+        local _duration_s=$(command ffprobe -i "$_tmp_audio" -show_entries format=duration -v quiet -of csv="p=0" | command cut -d. -f1)
+        print -P "%F{114}[3/3] Saved → %B%F{183}$_target_file%f%b (%F{117}${_size_kb}KB%F{114}, audio ${_duration_s}s, %F{117}$((_t_end-_t_start))s%F{114} for ASR)"
+    else
+       print -P "%F{203}[CRIT] Process failed: Result file not found.%f"
     fi
 }
