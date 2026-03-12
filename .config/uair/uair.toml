@@ -1,13 +1,14 @@
-# ┌─── Uair Configuration ─────────────────────────────────────────────────────┐
+# ┌─── 1. Interface & Output ──────────────────────────────────────────────────┐
 
 [defaults]
-# [OPTIMIZATION] Output JSON for Waybar dynamic styling
+# [NOTE] JSON format is required for dynamic CSS class switching in Waybar
 format = "{ \"text\": \"{name}  {time}\", \"class\": \"{id}\" }\n"
 time_format = "%M:%S"
 
 
-# --- Cycle 1 ------------------------------------------------------------------
+# ┌─── 2. Standard Pomodoro Cycles ────────────────────────────────────────────┐
 
+# Cycle 1
 [[sessions]]
 id       = "work1"
 duration = "25m"
@@ -20,9 +21,7 @@ duration = "5m"
 name     = "󰅶"
 command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-
-# --- Cycle 2 ------------------------------------------------------------------
-
+# Cycle 2
 [[sessions]]
 id       = "work2"
 duration = "25m"
@@ -35,9 +34,7 @@ duration = "5m"
 name     = "󰅶"
 command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-
-# --- Cycle 3 ------------------------------------------------------------------
-
+# Cycle 3
 [[sessions]]
 id       = "work3"
 duration = "25m"
@@ -50,9 +47,7 @@ duration = "5m"
 name     = "󰅶"
 command  = "notify-send -u normal -i coffee 'Break Over' 'Back to work.'"
 
-
-# --- Cycle 4 (Final) ----------------------------------------------------------
-
+# Cycle 4 (Final Stretch)
 [[sessions]]
 id       = "work4"
 duration = "25m"
@@ -60,10 +55,10 @@ name     = "󰄉"
 command  = "notify-send -u critical -i clock 'Cycle Complete' 'Earned a Long Break.'"
 
 
-# --- Long Break ---------------------------------------------------------------
+# ┌─── 3. Extended Rest ───────────────────────────────────────────────────────┐
 
 [[sessions]]
-# [INFO] Standard Pomodoro long break (15-30m)
+# [NOTE] Recharging phase after completing a full set (4 focus sessions)
 id       = "long_rest"
 duration = "20m"
 name     = "󰤁"
