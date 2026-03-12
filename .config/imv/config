@@ -1,35 +1,23 @@
-# === IMV - CONFIGURATION ===
-
-# === Options ===
 [options]
 scaling_mode = full
-
-# === Keybindings ===
 [binds]
-# --- Navigation ---
-n        = next
-p        = prev
-j        = next
-k        = prev
-<Left>   = prev
-<Right>  = next
-<Home>   = goto 1
-<End>    = goto -1
-
-# --- Viewing Modes ---
+n = next
+p = prev
+j = next
+k = prev
+<Left>  = prev
+<Right> = next
+<Home> = goto 1
+<End>  = goto -1
 a = scaling none
 s = scaling shrink
-f = fullscreen
 z = scaling full
-
-# --- Zoom & Pan ---
-i      = zoom 10
-o      = zoom -10
-h      = pan -50 0
-l      = pan 50 0
+f = fullscreen
+i = zoom 10
+o = zoom -10
+h = pan -50 0
+l = pan 50 0
 <Up>   = pan 0 -50
 <Down> = pan 0 50
-
-# --- Management ---
 d = overlay
 q = quit
