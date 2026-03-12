@@ -1,45 +1,8 @@
 git:
+  # ┌─── 1. Diff Rendering ────────────────────────────────────────────────────┐
+
   pagers:
+    # [NOTE] Use 'delta' for high-readability syntax-highlighted diffs
+    # [FIX] --paging=never is required for Lazygit to handle internal scrolling
     - colorArg: always
       pager: delta --paging=never
-customCommands:
-  - key: "C"
-    description: "Commit (Conventional Commits)"
-    context: "files"
-    command: >
-      git commit -m "{{index .PromptResponses 0}}{{if index .PromptResponses 1}}({{index .PromptResponses 1}}){{end}}: {{index .PromptResponses 2}}" -e
-
-    prompts:
-      - type: "menu"
-        title: "Select Commit Type"
-        options:
-          - name: "feat       (Feature)          Adding new functionality."
-            value: "feat"
-          - name: "feat!      (BREAKING)         Breaking feature change."
-            value: "feat!"
-          - name: "fix        (Bug Fix)          Fixing an error (bug)."
-            value: "fix"
-          - name: "fix!       (BREAKING)         Breaking bug fix."
-            value: "fix!"
-          - name: "docs       (Documentation)    Documentation only."
-            value: "docs"
-          - name: "style      (Formatting)       No code logic changes."
-            value: "style"
-          - name: "refactor   (Refactoring)      Code restructuring."
-            value: "refactor"
-          - name: "perf       (Performance)      Performance improvements."
-            value: "perf"
-          - name: "test       (Testing)          Test-related changes."
-            value: "test"
-          - name: "chore      (Build/Config)     CI, configs, tooling."
-            value: "chore"
-          - name: "revert     (Revert)           Revert a previous commit."
-            value: "revert"
-      - type: "input"
-        title: "Scope (Optional — leave empty to skip)"
-        initialValue: ""
-      - type: "input"
-        title: "Message (Required)"
-        initialValue: ""
-        required: true
-    output: terminal
