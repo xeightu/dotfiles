@@ -1,37 +1,29 @@
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                       WAYBAR - STYLE CONFIGURATION                         │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── 1. Imports ─────────────────────────────────────────────────────────────┐ */
 
-/* --- Theme Import --- */
-@import "colors.css";                    /* [INFO] Load the centralized color palette. */
+@import "colors.css";
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                               GLOBAL STYLES                                │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── 2. Global Styles ───────────────────────────────────────────────────────┐ */
 
 * {
-    font-family: "JetBrains Mono Nerd Font", FontAwesome, sans-serif;
-    font-size: 14px;
-    border: none;
-    border-radius: 0;
+  font-family: "JetBrains Mono Nerd Font", FontAwesome, sans-serif;
+  font-size: 14px;
+  border: none;
+  border-radius: 0;
 }
 
-/* --- Main Bar Window --- */
 window#waybar {
-    background-color: alpha(@base, 0.4);        /* [INFO] Semi-transparent, floating pill-style. */
-    color: @text;
-    border-radius: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);     /* [INFO] Subtle shadow for depth. */
+  /* [NOTE] Semi-transparent floating pill-style design */
+  background-color: alpha(@base, 0.4);
+  color: @text;
+  border-radius: 15px;
 }
 
 #waybar > box {
-    margin-left: 12px;
-    margin-right: 12px;
+  margin-left: 12px;
+  margin-right: 12px;
 }
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                           GENERAL MODULE STYLES                            │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── 3. Common Module Layout ────────────────────────────────────────────────┐ */
 
 #workspaces,
 #custom-window,
@@ -39,188 +31,190 @@ window#waybar {
 #language,
 #custom-pomodoro,
 #clock,
-#custom-dunst,
+#custom-notification,
 #custom-updates,
 #network,
 #pulseaudio,
 #battery,
 #tray {
-    background-color: @base;
-    padding: 2px 15px;
-    margin: 5px 4px;
-    border: 1px solid @overlay0;
-    border-radius: 12px;
-    transition: background-color 0.2s ease, color 0.2s ease;        /* [FIX] Smooth transitions. */
+  background-color: @base;
+  padding: 2px 15px;
+  margin: 5px 4px;
+  border: 1px solid @overlay0;
+  border-radius: 12px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
-/* --- Workspaces --- */
+/* ┌─── 4. Specialized Modules ─────────────────────────────────────────────────┐ */
+
+/* Workspaces Interaction */
 #workspaces button {
-    padding: 0 8px;
-    background-color: transparent;
-    color: @subtext1;
-    border-radius: 10px;
-    transition: color 0.3s ease, background-color 0.3s ease;
+  padding: 0 8px;
+  background-color: transparent;
+  color: @subtext1;
+  border-radius: 10px;
+  transition:
+    color 0.3s ease,
+    background-color 0.3s ease;
 }
 
 #workspaces button:hover {
-    background-color: @overlay0;
+  background-color: @overlay0;
 }
 
 #workspaces button.active {
-    background-color: @lavender;
-    color: @base;
+  background-color: @lavender;
+  color: @base;
 }
 
 #workspaces button.urgent {
-    color: @red;
+  color: @red;
 }
 
-/* --- Media Player --- */
-#mpris.paused {
-    color: @overlay1;
-    font-style: italic;
-}
-
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                              SYSTEM MONITORS                               │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-
-/* --- Shared Base Styles --- */
+/* Hardware Monitors */
 #cpu,
 #memory,
 #custom-temperature {
-    background-color: @base;
-    padding:          2px 10px;
-    margin-top:       5px;
-    margin-bottom:    5px;
-    border:           1px solid @overlay0;
-    transition:       background-color 0.2s ease;
+  background-color: @base;
+  padding: 2px 10px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border: 1px solid @overlay0;
+  transition: background-color 0.2s ease;
 }
 
-/* --- CPU --- */
 #cpu {
-    border-top-left-radius:    12px;
-    border-bottom-left-radius: 12px;
-    margin-left:               4px;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  margin-left: 4px;
 }
 
-/* --- Memory --- */
 #memory {
-    border-radius:    0;
-    margin-left:      -1px;             /* [FIX] Overlap borders for seamless look. */
+  border-radius: 0;
+  /* [FIX] Overlap borders to create a seamless unified block */
+  margin-left: -1px;
 }
 
-/* --- Temperature --- */
 #custom-temperature {
-    border-top-right-radius:    12px;
-    border-bottom-right-radius: 12px;
-    margin-right:               4px;
-    margin-left:                -1px;   /* [FIX] Overlap borders. */
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  margin-right: 4px;
+  margin-left: -1px;
 }
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                               BATTERY MODULE                               │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-
-#battery {
-    color: @subtext1;                   /* [INFO] Default discharging color. */
-}
-
-/* --- Charging State (The Plug) --- */
+/* Battery States */
 #battery.charging,
 #battery.plugged {
-    color: @green;                      /* [INFO] Bright green confirms power connection. */
+  color: @green;
 }
 
-/* --- Warning State (Low Battery) --- */
 #battery.warning:not(.charging) {
-    color: @peach;                      /* [INFO] Orange warning. */
+  color: @peach;
 }
 
-/* --- Critical State (Panic Mode) --- */
 #battery.critical:not(.charging) {
-    color: @red;
-    border-color: @red;                 /* [INFO] Red border for extra visibility. */
-    animation-name: blink;
-    animation-duration: 0.5s;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
+  color: @red;
+  border-color: @red;
+  animation-name: blink;
+  animation-duration: 0.5s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
 }
 
-/* --- Animation Definition --- */
-@keyframes blink {
-    to {
-        background-color: @red;         /* [INFO] Flash red background. */
-        color: @base;                   /* [INFO] Text turns dark for contrast. */
-    }
-}
-
-/* [STYLE] Calm breathing animation for Long Breaks */
-@keyframes breathe {
-    0%   { background-color: @base; }
-    50%  { background-color: alpha(@sapphire, 0.3); } /* Soft Blue Pulse */
-    100% { background-color: @base; }
-}
-
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                              POMODORO MODULE                               │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
-
-#custom-pomodoro {
-    color: @rosewater;                  /* [INFO] Fallback/Idle color. */
-}
-
-/* --- Work Cycles (Focus) --- */
+/* Pomodoro States */
 #custom-pomodoro.work1,
 #custom-pomodoro.work2,
 #custom-pomodoro.work3,
 #custom-pomodoro.work4 {
-    color: @red;
-    border-color: @red;                 /* [STYLE] Visual urgency for work. */
+  color: @red;
+  border-color: @red;
 }
 
-/* --- Rest Cycles (Break) --- */
 #custom-pomodoro.rest1,
 #custom-pomodoro.rest2,
 #custom-pomodoro.rest3,
 #custom-pomodoro.rest4 {
-    color: @green;
-    border-color: @green;
+  color: @green;
+  border-color: @green;
 }
 
-/* --- Long Break --- */
 #custom-pomodoro.long_rest {
-    color: @sapphire;
-    animation-name: breathe;
-    animation-duration: 4s;
-    animation-iteration-count: infinite;
+  color: @sapphire;
+  animation-name: breathe;
+  animation-duration: 4s;
+  animation-iteration-count: infinite;
 }
 
-/* ┌────────────────────────────────────────────────────────────────────────────┐ */
-/* │                             MODULE ICON COLORS                             │ */
-/* └────────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── 5. Animations ──────────────────────────────────────────────────────────┐ */
 
-#custom-updates         { color: @flamingo; }
-#clock                  { color: @lavender; }
+@keyframes blink {
+  to {
+    background-color: @red;
+    color: @base;
+  }
+}
 
-/* --- Hardware Group --- */
-#cpu                    { color: @blue; }
-#memory                 { color: @yellow; }
-#custom-temperature     { color: @maroon; }
+@keyframes breathe {
+  0% {
+    background-color: @base;
+  }
+  50% {
+    background-color: alpha(@sapphire, 0.3);
+  }
+  100% {
+    background-color: @base;
+  }
+}
 
-/* --- Connectivity & Input --- */
-#network                { color: @sky; }
-#language               { color: @green; }
+/* ┌─── 6. Module Icons & Theming ──────────────────────────────────────────────┐ */
 
-/* --- Media & Sound --- */
-#mpris                  { color: @mauve; }
-#pulseaudio             { color: @maroon; }
+#custom-updates.urgent {
+  color: @red;
+}
+#custom-updates.updates {
+  color: @green;
+}
+#clock {
+  color: @lavender;
+}
+#cpu {
+  color: @blue;
+}
+#memory {
+  color: @yellow;
+}
+#custom-temperature {
+  color: @maroon;
+}
+#network {
+  color: @sky;
+}
+#language {
+  color: @green;
+}
+#mpris {
+  color: @mauve;
+}
+#pulseaudio {
+  color: @maroon;
+}
+#custom-notification {
+  color: @peach;
+}
 
-/* --- System Status --- */
-#battery                { color: @green; }
-#custom-dunst           { color: @peach; }
-
-/* --- Status Specifics --- */
-#pulseaudio.muted       { color: @overlay0; opacity: 0.6; }
-#battery.critical       { color: @red; opacity: 0.8; }
+/* Status Specifics */
+#mpris.paused {
+  color: @overlay1;
+  font-style: italic;
+}
+#pulseaudio.muted {
+  color: @overlay0;
+  opacity: 0.6;
+}
+#battery.critical {
+  color: @red;
+  opacity: 0.8;
+}
