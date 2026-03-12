@@ -1,13 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Выполняем ВАШУ команду для переключения мута микрофона
+# ┌─── 1. Toggle Audio State ──────────────────────────────────────────────────┐
+
+# [NOTE] Uses WirePlumber's wpctl to flip the mute state on the default source
 wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 
-# Проверяем состояние ПОСЛЕ переключения
-if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q "MUTED"; then
-  # Если микрофон выключен
-  dunstify -a "toggle-mic" -u low -i "microphone-sensitivity-muted" "Microphone: OFF"
+# ┌─── 2. Status Check & Notification ─────────────────────────────────────────┐
+
+# [NOTE] Capture volume output to determine current state after toggle
+_status=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)
+
+if [[ "$_status" == *"MUTED"* ]]; then
+  dunstify -a "toggle-mic" \
+    -u low \
+    -i "microphone-sensitivity-muted" \
+    "Microphone: OFF"
 else
-  # Если микрофон включен
-  dunstify -a "toggle-mic" -u low -i "microphone-sensitivity-high" "Microphone: ON"
+  dunstify -a "toggle-mic" \
+    -u low \
+    -i "microphone-sensitivity-high" \
+    "Microphone: ON"
 fi
