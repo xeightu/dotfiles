@@ -1,79 +1,69 @@
-#!/bin/bash
-# ┌──────────────────────────────────────────────────┐
-# │                 Power & Session Menu             │
-# └──────────────────────────────────────────────────┘
-# [INFO] This script displays a Wofi menu for session control with
-# [INFO] a confirmation dialog for critical actions.
+#!/usr/bin/env bash
 
-# --- Configuration ---
-# [CONFIG] Define menu entries with Nerd Font icons, ordered logically.
-lock=" Lock"
-suspend=" Suspend"
-hibernate="󰒲 Hibernate"
-logout=" Logout"
-reboot=" Reboot"
-shutdown=" Shutdown"
+# ┌─── 1. Configuration & Registry ────────────────────────────────────────────┐
 
-# [CONFIG] Wofi window dimensions.
-main_menu_width="300"
-main_menu_height="250"
-confirm_menu_width="300"
-confirm_menu_height="100"
+# [NOTE] Define labels and their corresponding system commands in one place
+declare -A ACTIONS=(
+  ["  Lock"]="hyprlock"
+  ["  Suspend"]="systemctl suspend"
+  ["󰒲  Hibernate"]="systemctl hibernate"
+  ["  Logout"]="hyprctl dispatch exit"
+  ["  Reboot"]="systemctl reboot"
+  ["  Power Off"]="systemctl poweroff"
+)
 
-# --- Function: Confirmation Dialog ---
-# [INFO] Shows a 'Yes/No' confirmation dialog for a given action.
-confirm_action() {
-  local question="$1"
-  local confirm_options=" Yes\n No"
+# Order of appearance in the menu
+ORDER=("  Lock" "  Suspend" "󰒲  Hibernate" "  Logout" "  Reboot" "  Power Off")
 
-  local confirm_choice=$(echo -e "$confirm_options" | wofi --dmenu \
-    --prompt "$question" \
-    --width "$confirm_menu_width" \
-    --height "$confirm_menu_height")
+# ┌─── 2. Internal Helpers ────────────────────────────────────────────────────┐
 
-  if [[ "$confirm_choice" == *"Yes"* ]]; then
-    return 0 # Success
-  else
-    return 1 # Cancelled
-  fi
+_run_rofi() {
+  local _prompt="$1"
+  local _theme="$2"
+  local _options="$3"
+
+  echo -e "$_options" | rofi -dmenu -i -p "$_prompt" -theme-str "$_theme"
 }
 
-# --- Main Logic ---
-# [INFO] Assemble the main menu options in a logical order.
-options="$lock\n$suspend\n$hibernate\n$logout\n$reboot\n$shutdown"
+_confirm() {
+  local _msg="$1"
+  # [NOTE] High-contrast modal theme for confirmation dialogs
+  local _theme="window {width: 270px; border: 2px; border-color: @urgent;} listview {lines: 2;} entry {enabled: false;} element { children: [ \"element-text\" ]; }"
+  local _choice
+  _choice=$(_run_rofi "$_msg" "$_theme" "󰄬 Yes\n󰅖 No")
 
-# [INFO] Show the main menu.
-choice=$(echo -e "$options" | wofi --dmenu \
-  --prompt "Power Menu" \
-  --width "$main_menu_width" \
-  --height "$main_menu_height")
+  [[ "$_choice" == *"Yes"* ]]
+}
 
-# [INFO] Process the user's choice.
-case "$choice" in
-"$lock")
-  hyprlock
+# ┌─── 3. Main Logic ──────────────────────────────────────────────────────────┐
+
+# [NOTE] Calculate uptime to display in the prompt for better UX context
+_uptime=$(uptime -p | sed -e 's/up //')
+_menu_options=$(
+  IFS=$'\n'
+  echo "${ORDER[*]}"
+)
+
+# [NOTE] Main Menu: centered, medium width
+_main_theme="window {width: 350px; border: 2px; border-color: @selected;} listview {lines: 6;} entry {enabled: false;} element { children: [ \"element-text\" ]; }"
+_selection=$(_run_rofi "Uptime: $_uptime" "$_main_theme" "$_menu_options")
+
+# Exit if nothing selected (ESC)
+[[ -z "$_selection" ]] && exit 0
+
+_cmd="${ACTIONS[$_selection]}"
+
+# ┌─── 4. Execution Logic ─────────────────────────────────────────────────────┐
+
+case "$_selection" in
+*"Lock"* | *"Suspend"*)
+  # [NOTE] Non-destructive actions execute immediately
+  eval "$_cmd"
   ;;
-"$logout")
-  if confirm_action "Are you sure?"; then
-    hyprctl dispatch exit
-  fi
-  ;;
-"$suspend")
-  systemctl suspend
-  ;;
-"$hibernate")
-  if confirm_action "Are you sure?"; then
-    systemctl hibernate
-  fi
-  ;;
-"$reboot")
-  if confirm_action "Are you sure?"; then
-    systemctl reboot
-  fi
-  ;;
-"$shutdown")
-  if confirm_action "Are you sure?"; then
-    systemctl poweroff
+*)
+  # [WARN] Destructive actions require explicit user confirmation
+  if _confirm "Confirm ${_selection#* }?"; then
+    eval "$_cmd"
   fi
   ;;
 esac
