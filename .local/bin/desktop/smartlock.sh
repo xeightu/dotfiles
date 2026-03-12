@@ -1,44 +1,50 @@
-#!/bin/bash
-# ┌────────────────────────────────────┐
-# │          SMART LOCK SCRIPT         │
-# └────────────────────────────────────┘
-# Prevents locking if sound, fullscreen, or inhibit flag is active.
+#!/usr/bin/env bash
 
-# --- Check 1: Any active sound output (PipeWire / PulseAudio)
+# ┌─── 1. Environment & Dependencies ──────────────────────────────────────────┐
+
+# [NOTE] Script requires jq for JSON parsing and pactl for audio state detection
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is required for smart lock logic." >&2
+  exit 1
+fi
+
+# ┌─── 2. Inhibit Checks ──────────────────────────────────────────────────────┐
+
+# --- Check: Active Audio ---
+# [NOTE] Prevents locking while media (YouTube, Spotify, etc.) is playing
 if pactl list sink-inputs 2>/dev/null | grep -q "state: RUNNING"; then
-  echo "[smart_lock] Audio active — skipping lock"
   exit 0
 fi
 
-# --- Check 2: Fullscreen or borderless window ---
-active_win_json=$(hyprctl activewindow -j 2>/dev/null)
-if [ -n "$active_win_json" ]; then
-  fullscreen=$(echo "$active_win_json" | jq -r '.fullscreen')
-  if [ "$fullscreen" = "true" ]; then
-    echo "[smart_lock] Fullscreen window — skipping lock"
-    exit 0
-  fi
+# --- Check: Fullscreen Applications ---
+_win_json=$(hyprctl activewindow -j 2>/dev/null)
 
-  # fallback: check if window covers the monitor
-  win_w=$(echo "$active_win_json" | jq -r '.size[0]')
-  win_h=$(echo "$active_win_json" | jq -r '.size[1]')
-  screen_json=$(hyprctl monitors -j | jq -r '.[0]')
-  screen_w=$(echo "$screen_json" | jq -r '.width')
-  screen_h=$(echo "$screen_json" | jq -r '.height')
+if [[ -n "$_win_json" && "$_win_json" != "{}" ]]; then
+  # [NOTE] Check explicit fullscreen flag first
+  _is_fullscreen=$(echo "$_win_json" | jq -r '.fullscreen')
+  [[ "$_is_fullscreen" == "true" ]] && exit 0
 
-  # allow small borders (e.g., borderless window)
-  if [ "$win_w" -ge $((screen_w - 20)) ] && [ "$win_h" -ge $((screen_h - 20)) ]; then
-    echo "[smart_lock] Borderless fullscreen — skipping lock"
+  # [NOTE] Fallback: Detect "fake" fullscreen (borderless windows covering the screen)
+  _win_w=$(echo "$_win_json" | jq -r '.size[0]')
+  _win_h=$(echo "$_win_json" | jq -r '.size[1]')
+  _mon_id=$(echo "$_win_json" | jq -r '.monitor')
+
+  # Get dimensions of the monitor containing the active window
+  _screen_json=$(hyprctl monitors -j | jq -r ".[] | select(.id == $_mon_id)")
+  _screen_w=$(echo "$_screen_json" | jq -r '.width')
+  _screen_h=$(echo "$_screen_json" | jq -r '.height')
+
+  # Allow a 20px tolerance for window decorations or panels
+  if ((_win_w >= (_screen_w - 20) && _win_h >= (_screen_h - 20))); then
     exit 0
   fi
 fi
 
-# --- Check 3: Idle inhibit flag (manual override) ---
-if [ -f /tmp/idle-inhibit ]; then
-  echo "[smart_lock] Inhibit flag present — skipping lock"
-  exit 0
-fi
+# --- Check: Manual Inhibit Flag ---
+# [NOTE] Allows users to manually pause auto-locking via 'touch /tmp/idle-inhibit'
+[[ -f "/tmp/idle-inhibit" ]] && exit 0
 
-# --- Action: Lock screen ---
-echo "[smart_lock] No activity detected — locking screen"
+# ┌─── 3. Action ──────────────────────────────────────────────────────────────┐
+
+# [NOTE] No inhibit conditions met; proceeding to lock the session
 exec hyprlock
