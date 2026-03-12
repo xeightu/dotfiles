@@ -1,40 +1,59 @@
-# ┌─── 7. Initialization & Startup ────────────────────────────────────────────┐
-# │  [INFO] External tool hooks, completion wiring, and global keybindings.
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Arch Linux Integrations ─────────────────────────────────────────────┐
 
-
-# ┌── 7.1. External Integrations ──────────────────────────────────────────────┐
-
-# [FIX] Distro-specific paths (Arch Linux standard)
-# These files provide FZF TUI bindings and command-not-found database
+# [FIX] Load distro-specific completions and key-bindings if available
 [[ -f "/usr/share/fzf/key-bindings.zsh" ]] && source "/usr/share/fzf/key-bindings.zsh"
 [[ -f "/usr/share/fzf/completion.zsh" ]]   && source "/usr/share/fzf/completion.zsh"
-[[ -f "/usr/share/doc/pkgfile/command-not-found.zsh" ]] && source "/usr/share/doc/pkgfile/command-not-found.zsh"
+
+# Command-not-found handler (pkgfile)
+[[ -f "/usr/share/doc/pkgfile/command-not-found.zsh" ]] && \
+    source "/usr/share/doc/pkgfile/command-not-found.zsh"
 
 
-# [OPT] Binary-check before heavy 'eval' calls to prevent startup lag
-command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
-command -v atuin  >/dev/null && eval "$(atuin init zsh)"
-command -v mise   >/dev/null && eval "$(mise activate zsh)"
+# ┌─── 2. External Tool Hooks ─────────────────────────────────────────────────┐
+
+# [NOTE] Cache 'eval' output to minimize shell startup latency
+() {
+    local _hook_cache="${ZSH_CACHE_DIR:-$HOME/.cache/zsh}/hooks"
+    [[ -d "$_hook_cache" ]] || mkdir -p "$_hook_cache"
+
+    local _tool _bin _cache _cmd
+    
+    for _tool in zoxide atuin mise; do
+        (( $+commands[$_tool] )) || continue
+        
+        _bin="${commands[$_tool]}"
+        _cache="$_hook_cache/${_tool}_hook.zsh"
+
+        case "$_tool" in
+            mise) _cmd="activate zsh" ;;
+            *)    _cmd="init zsh"     ;;
+        esac
+
+        # [NOTE] Regenerate cache only if binary is newer (-nt) or cache is empty
+        if [[ "$_bin" -nt "$_cache" || ! -s "$_cache" ]]; then
+            "$_tool" $=_cmd >! "$_cache" 2>/dev/null
+        fi
+
+        source "$_cache"
+    done
+}
 
 
-# ┌── 7.2. Metro System Wiring ────────────────────────────────────────────────┐
+# ┌─── 3. Shell Completion Wiring ─────────────────────────────────────────────┐
 
-# [FLOW] Register custom completions for Metro navigation engine
-# Requires _metro_completion to be defined in Section 6
-if type compdef &>/dev/null; then
+# Register internal 'metro' commands with the completion system
+if (( $+functions[compdef] )); then
     compdef _metro_completion edit
     compdef _metro_completion view
     compdef _metro_completion goto
 fi
 
 
-# ┌── 7.3. Custom Keybindings ─────────────────────────────────────────────────┐
+# ┌─── 4. Event Loop & Keybindings ────────────────────────────────────────────┐
 
-# [FLOW] Map Enter/Ctrl+J to the context-aware 'magic-enter'
-bindkey "^J" magic-enter
-bindkey "^M" magic-enter
+# Bind magic-enter (smart context action) to Return keys
+bindkey "^J" magic_enter
+bindkey "^M" magic_enter
 
-# [FIX] Force autosuggestions to clear when magic-enter executes
-# This prevents visual artifacts from old suggestions
-ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(magic-enter accept-line)
+# [FIX] Force autosuggestions to clear when executing custom widgets
+ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(magic_enter accept-line)
