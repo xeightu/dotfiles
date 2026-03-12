@@ -1,18 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌──────────────────────────────────────────────────┐
-# │                   Waybar Toggle                  │
-# └──────────────────────────────────────────────────┘
-# [INFO] This script toggles the visibility of the Waybar status bar.
-# [INFO] It checks if the 'waybar' process is running and either
-# [INFO] kills it to hide or launches it to show.
+# ┌─── 1. Process Toggle Logic ────────────────────────────────────────────────┐
 
-# --- Main Logic ---
-# [INFO] 'pgrep -x "waybar"' checks for an exact process name match.
+# [NOTE] Check for an exact process name match to determine visibility state
 if pgrep -x "waybar" >/dev/null; then
-  # [INFO] If the process exists, kill it.
-  killall waybar
+  # Terminate all instances to hide the status bar
+  pkill -x waybar
 else
-  # [INFO] If the process does not exist, launch it in the background.
+  # Launch waybar in the background and detach it from the parent shell
   waybar &
 fi
