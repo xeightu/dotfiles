@@ -1,25 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌──────────────────────────────────────────────────┐
-# │               Brightness Control Script          │
-# └──────────────────────────────────────────────────┘
-# [INFO] This script changes the screen brightness and shows a notification
-# [INFO] with a progress bar. It accepts '+' or '-' as an argument.
+# ┌─── 1. Configuration ───────────────────────────────────────────────────────┐
 
-# --- Change Brightness ---
-# [CONFIG] The step percentage for brightness change.
 STEP="5%"
-brightnessctl set "$STEP$1"
+TIMEOUT=500
 
-# --- Show Notification ---
-# [INFO] Get current and max brightness to calculate the percentage.
-BRIGHTNESS=$(brightnessctl get)
-MAX_BRIGHTNESS=$(brightnessctl max)
-PERCENTAGE=$((BRIGHTNESS * 100 / MAX_BRIGHTNESS))
+# ┌─── 2. Hardware Interaction ────────────────────────────────────────────────┐
 
-# [CONFIG] Notification timeout in milliseconds.
-TIMEOUT="500"
+# [NOTE] Expects '+' or '-' as the first argument to change direction
+if ! brightnessctl set "${STEP}${1}" >/dev/null 2>&1; then
+  echo "Error: Invalid argument or hardware access failed." >&2
+  exit 1
+fi
 
-# [INFO] Use dunstify to show a notification that can be replaced (using -a)
-# [INFO] and has a progress bar (using -h).
-dunstify -a "brightness-control" -u low -i "display-brightness" -h int:value:"$PERCENTAGE" "Brightness: ${PERCENTAGE}%" -t "$TIMEOUT"
+_raw_val=$(brightnessctl get)
+_max_val=$(brightnessctl max)
+_percentage=$((_raw_val * 100 / _max_val))
+
+# ┌─── 3. Visual Feedback ─────────────────────────────────────────────────────┐
+
+# [NOTE] Using app name (-a) ensures previous notifications are replaced
+dunstify -a "brightness-control" \
+  -u low \
+  -i "display-brightness" \
+  -h int:value:"$_percentage" \
+  -t "$TIMEOUT" \
+  "Brightness: ${_percentage}%"
