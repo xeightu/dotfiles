@@ -1,81 +1,107 @@
 #!/usr/bin/env bash
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │ INTERACTIVE MAINTENANCE DASHBOARD                                          │
-# └────────────────────────────────────────────────────────────────────────────┘
 
-# [INFO] Resolve absolute path to load library safely
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-source "$SCRIPT_DIR/syslib.sh"
+# ┌─── 1. Global Environment & Initialization ─────────────────────────────────┐
 
-# ┌─── Interface Logic ────────────────────────────────────────────────────────┐
+# [NOTE] Ensure absolute path resolution for library sourcing
+_script_dir="$(dirname "$(realpath "$0")")"
 
-pause() {
-  echo ""
-  printf "%bPress Enter to return to menu...%b" "${C_GREY}" "${C_NC}"
+if [[ -f "$_script_dir/syslib.sh" ]]; then
+  source "$_script_dir/syslib.sh"
+else
+  echo "Error: syslib.sh not found in $_script_dir" >&2
+  exit 1
+fi
+
+# [NOTE] Pre-flight validation of system dependencies defined in syslib
+_check_requirements
+
+# ┌─── 2. Interface Logic ─────────────────────────────────────────────────────┐
+
+_pause() {
+  printf "\n%bPress Enter to return to menu...%b" "${CLR_SUB}" "${CLR_NC}"
   read -r
 }
 
-show_menu() {
+_render_menu() {
   clear
-  banner "SYSTEM MAINTENANCE"
+  render_banner "SYSTEM MAINTENANCE"
 
-  # [VISUAL] Grid alignment for readability
-  # Option 1 delegates to the Hybrid Pipeline (sysup.sh)
-  printf " %b[1]%b  System Update %b(Auto-Pilot)%b\n" "${C_BLUE}" "${C_NC}" "${C_GREY}" "${C_NC}"
-
+  # [NOTE] Primary automated pipeline
+  printf " %b[1]%b  System Update %b(Auto-Pilot)%b\n" "${CLR_PANEL}" "${CLR_NC}" "${CLR_SUB}" "${CLR_NC}"
   echo ""
 
-  # Options 2-6 delegate to granular bash functions in syslib.sh
-  printf " %b[2]%b  Update Mirrors\n" "${C_BLUE}" "${C_NC}"
-  printf " %b[3]%b  Create Snapshot\n" "${C_BLUE}" "${C_NC}"
-  printf " %b[4]%b  System Cleanup\n" "${C_BLUE}" "${C_NC}"
-  printf " %b[5]%b  Security Scans\n" "${C_BLUE}" "${C_NC}"
-  printf " %b[6]%b  Arch Linux News\n" "${C_BLUE}" "${C_NC}"
+  # [NOTE] Granular maintenance modules for manual intervention
+  printf " %b[2]%b  Update Mirrors\n" "${CLR_PANEL}" "${CLR_NC}"
+  printf " %b[3]%b  Create Snapshot\n" "${CLR_PANEL}" "${CLR_NC}"
+  printf " %b[4]%b  System Cleanup\n" "${CLR_PANEL}" "${CLR_NC}"
+  printf " %b[5]%b  Security Audit\n" "${CLR_PANEL}" "${CLR_NC}"
+  printf " %b[6]%b  Arch Linux News\n" "${CLR_PANEL}" "${CLR_NC}"
+  printf " %b[7]%b  System Health Check\n" "${CLR_PANEL}" "${CLR_NC}"
 
   echo ""
-  printf " %b[Q]%b  Quit\n" "${C_RED}" "${C_NC}"
+  printf " %b[Q]%b  Quit\n" "${CLR_ERR}" "${CLR_NC}"
   echo ""
 }
 
-# ┌─── Main Loop ──────────────────────────────────────────────────────────────┐
+# ┌─── 3. Main Event Loop ─────────────────────────────────────────────────────┐
 
 while true; do
-  show_menu
+  _render_menu
 
-  read -r -p " Select option: " choice
+  printf " Select option: "
+  read -r _choice
   echo ""
 
-  case "$choice" in
+  case "$_choice" in
   1)
-    # [EXEC] Hand over control to the main pipeline
-    "$SCRIPT_DIR/sysup.sh"
+    # [NOTE] Execution transfer to the sequential update pipeline
+    if [[ -x "$_script_dir/sysup.sh" ]]; then
+      "$_script_dir/sysup.sh"
+    else
+      die "sysup.sh not found or not executable"
+    fi
+    _pause
     ;;
+
   2)
     optimize_mirrors
-    pause
+    _pause
     ;;
+
   3)
     smart_snapshot
-    pause
+    _pause
     ;;
+
   4)
     sys_cleanup
-    pause
+    _pause
     ;;
+
   5)
-    sys_security
-    pause
+    # [WARN] Security audit may require elevated privileges for deep inspection
+    run_security_audit
+    _pause
     ;;
+
   6)
-    check_news
-    pause
+    check_arch_news
+    _pause
     ;;
+
+  7)
+    run_health_report
+    _pause
+    ;;
+
   [Qq])
     clear
+    # [NOTE] Graceful exit from the maintenance environment
     break
     ;;
+
   *)
-    printf "%bInvalid option selected.%b\n" "${C_RED}" "${C_NC}"
+    printf "%bInvalid option: %s%b\n" "${CLR_ERR}" "$_choice" "${CLR_NC}"
     sleep 1
     ;;
   esac
