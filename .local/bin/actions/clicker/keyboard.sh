@@ -1,65 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌─── Keyboard Alpha-Batch ───────────────────────────────────────────────────┐
-# │ Target: A-Z Keys Only.                                                     │
-# │ Speed: ~1300 CPM (Chars Per Minute) depending on sleep.                    │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Configuration & Constants ───────────────────────────────────────────┐
 
-# ┌─── Configuration & State ──────────────────────────────────────────────────┐
+_pid_file="/tmp/clicker_keyboard.pid"
 
-PID_FILE="/tmp/clicker_keyboard.pid"
-SLEEP_TIME="0.02" # [CONFIG] Tick rate (0.02s = 50Hz)
+# [NOTE] Tick rate: 0.02s results in ~50Hz (approx 1300 CPM)
+_sleep_time="0.02"
 
-# ┌─── Payload Generator ──────────────────────────────────────────────────────┐
+# ┌─── 2. Internal Helpers ────────────────────────────────────────────────────┐
 
-# [INFO] Generates command string for QWERTY rows.
-# Row 1: Q-P (16-25) | Row 2: A-L (30-38) | Row 3: Z-M (44-50)
-generate_alpha_payload() {
-  local keys=""
-
-  for code in {16..25} {30..38} {44..50}; do
-    keys+="$code:1 $code:0 "
-  done
-
-  echo "$keys"
+# [NOTE] Verifies that the ydotool daemon is ready for IPC
+_check_env() {
+  if ! pgrep -x "ydotoold" >/dev/null; then
+    notify-send "Automation" "Error: ydotoold not running" -u critical -i "error"
+    exit 1
+  fi
 }
 
-# ┌─── Main Logic ─────────────────────────────────────────────────────────────┐
+# [NOTE] Generates ydotool codes for QWERTY rows (Q-P, A-L, Z-M)
+_generate_alpha_payload() {
+  local _keys=""
+  for _code in {16..25} {30..38} {44..50}; do
+    _keys+="$_code:1 $_code:0 "
+  done
+  echo "$_keys"
+}
 
-if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+# ┌─── 3. Execution Controller (Toggle) ───────────────────────────────────────┐
 
-  # --- Stop Sequence ---
+if [[ -f "$_pid_file" ]]; then
+  _pid=$(<"$_pid_file")
 
-  kill "$(cat "$PID_FILE")"
-  rm -f "$PID_FILE"
+  # [FIX] Aggressive termination: kill the child process and the parent loop
+  # [NOTE] pkill -P targets the 'ydotool' command running inside the subshell
+  pkill -P "$_pid" 2>/dev/null
+  kill -9 "$_pid" 2>/dev/null
+  rm -f "$_pid_file"
 
-  notify-send "Keyboard: OFF" \
-    -u "low" \
-    -t 500
-
-else
-
-  # --- Start Sequence ---
-
-  [ -f "$PID_FILE" ] && rm -f "$PID_FILE"
-
-  notify-send "Keyboard: ON (Alpha)" \
-    -u "critical" \
-    -t 500
-
-  # [OPTIMIZATION] Pre-calculate payload to avoid loop overhead.
-  PAYLOAD=$(generate_alpha_payload)
-
-  (
-    trap 'rm -f "$PID_FILE"' EXIT
-
-    while true; do
-      # shellcheck disable=SC2086
-      ydotool key $PAYLOAD
-      sleep "$SLEEP_TIME"
-    done
-  ) &
-
-  echo $! >"$PID_FILE"
-
+  notify-send "Automation" "Keyboard Clicker: OFF" -i "process-stop" -u low -t 800
+  exit 0
 fi
+
+# ┌─── 4. Activation & Background Loop ────────────────────────────────────────┐
+
+_check_env
+_payload=$(_generate_alpha_payload)
+
+# [WARN] Intensive keyboard simulation starts immediately
+notify-send "Automation" "Keyboard Clicker: ON (Alpha)" -i "input-keyboard" -u critical -t 1000
+
+(
+  # [NOTE] Ensure the PID file is removed if the subshell is externally killed
+  trap 'rm -f "$_pid_file"' EXIT INT TERM
+
+  while true; do
+    # [NOTE] Passing the entire row as unquoted arguments for word splitting
+    # shellcheck disable=SC2086
+    ydotool key $_payload 2>/dev/null || break
+    sleep "$_sleep_time"
+  done
+) &
+
+# Save the background subshell PID for the toggle logic
+echo $! >"$_pid_file"
