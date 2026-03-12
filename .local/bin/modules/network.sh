@@ -1,26 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# [INFO] This script provides a network status indicator for hyprlock.
+# ┌─── 1. Data Acquisition ────────────────────────────────────────────────────┐
 
-# [INFO] Get the primary active connection
-ACTIVE_CONNECTION=$(nmcli -t -f NAME,DEVICE,STATE c show --active | head -n 1)
+# [NOTE] Retrieve the primary active connection details via NetworkManager
+_active_conn=$(nmcli -t -f NAME,DEVICE,STATE c show --active | head -n 1)
 
-if [ -n "$ACTIVE_CONNECTION" ]; then
-  # [INFO] Connection exists, let's determine the type
-  DEVICE=$(echo "$ACTIVE_CONNECTION" | cut -d: -f2)
-  NAME=$(echo "$ACTIVE_CONNECTION" | cut -d: -f1)
+# ┌─── 2. Status Parsing & UI Logic ───────────────────────────────────────────┐
 
-  if [[ "$DEVICE" == "wlan"* || "$DEVICE" == "wlp"* ]]; then
-    # Wi-Fi connection
-    ICON="󰖩"
-    echo "${ICON}  ${NAME}"
+if [[ -n "$_active_conn" ]]; then
+  _name=$(echo "$_active_conn" | cut -d: -f1)
+  _device=$(echo "$_active_conn" | cut -d: -f2)
+
+  # [NOTE] Pattern match for common wireless device naming conventions
+  if [[ "$_device" == "wlan"* || "$_device" == "wlp"* ]]; then
+    _icon="󰖩"
+    _output="${_icon}  ${_name}"
   else
-    # Ethernet or other wired connection
-    ICON="󰈀"
-    echo "${ICON}  Wired"
+    _icon="󰈀"
+    _output="${_icon}  Wired"
   fi
 else
-  # No active connection
-  ICON="󰖪"
-  echo "${ICON}  Disconnected"
+  # Fallback for no active network detected
+  _icon="󰖪"
+  _output="${_icon}  Disconnected"
 fi
+
+# ┌─── 3. Final Output ────────────────────────────────────────────────────────┐
+
+# Plain text output intended for hyprlock status widgets
+echo "$_output"
