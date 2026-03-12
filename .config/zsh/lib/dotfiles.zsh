@@ -1,71 +1,95 @@
-# ┌─── Module: Dotfiles Ops ───────────────────────────────────────────────────┐
-# │  [INFO] Bare repository management engine and related helpers.             │
-# │  [DEPENDS] git, copy function (from tools.zsh), fzf, bat.                  │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Core Engine ─────────────────────────────────────────────────────────┐
 
-
-# ┌── Core Engine ─────────────────────────────────────────────────────────────┐
-
-# [FLOW] Primary engine for managing the bare repository (~/.dotfiles).
-# [NOTE] Serves as the backend for all 'd*' aliases (dstat, dadd, dpush).
 dotgit() {
-    # [CRIT] Fixed paths to avoid context drift and ensure bare repository mode
+    # [NOTE] Absolute paths prevent context drift in subdirectories
     command git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
 }
 
 
-# ┌── Diagnostics ─────────────────────────────────────────────────────────────┐
+# ┌─── 2. Diagnostics ─────────────────────────────────────────────────────────┐
 
-# [FLOW] Dotfiles Doctor: Diagnostic tool to detect "Ghost Files" (untracked).
+# dfd: Dotfiles Doctor - Dynamically renders a warning box for untracked files
 dfd() {
-    local untracked_files
+    local _untracked
+    # Scan critical paths for files not yet tracked in git
+    _untracked=$(dotgit ls-files --others --exclude-standard -- \
+        "$HOME/.config" "$HOME/.local/bin" "$HOME/.zshrc")
 
-    # [OPT] Explicitly hunt for untracked items in critical paths
-    untracked_files=$(dotgit ls-files --others --exclude-standard -- \
-        "$HOME/.config" "$HOME/.local/bin" "$HOME/.zshrc" "$HOME/.p10k.zsh")
+    [[ -z "$_untracked" ]] && return 0
 
-    if [[ -n "$untracked_files" ]]; then
-        print -P "%F{9}┌─ [CRIT] Untracked Dotfiles ──────────────────────────────────┐%f"
-        echo "$untracked_files" | sed 's/^/│  /' # [OPT] Visual border
-        print -P "%F{9}└────────────────────────────────────────────────────────────────┘%f"
-        print -P "%F{yellow}  Use 'dadd <path>' to secure them.%f"
-        return 1
-    else
-        print -P "%F{10}All critical dotfiles are tracked.%f"
-    fi
+    # 1. Calculate dynamic width
+    local _lines=("${(@f)_untracked}")
+    local _max_w=20 # Minimum base width
+    for _line in $_lines; do
+        (( ${#_line} > _max_w )) && _max_w=${#_line}
+    done
+    
+    # [NOTE] Cap width to 80 chars to prevent terminal overflow
+    (( _max_w > 80 )) && _max_w=80
+
+    # 2. Render Box Components
+    # Width = max string length + padding
+    local _hr_w=$(( _max_w + 4 ))
+    local _hr_line=$(printf "─%.0s" {1..$_hr_w})
+    
+    # 3. Output
+    print -P "%F{9}┌${_hr_line}┐%f"
+    print -P "%F{9}│%f  %BUNTRACKED DOTFILES%b"
+    print -P "%F{9}├${_hr_line}┤%f"
+    
+    for _line in $_lines; do
+        # Truncate string if it exceeds max width
+        local _display_text=${_line:0:$_max_w}
+        print -P "%F{9}│%f  ${_display_text}%f"
+    done
+    
+    print -P "%F{9}└${_hr_line}┘%f"
+    print -P "  %F{11}➜ Use 'da <path>' or 'ldot' to secure them.%f"
+    
+    return 1
 }
 
 
-# ┌── Interactive Diff ────────────────────────────────────────────────────────┐
+# ┌─── 3. Snippet Sharing ─────────────────────────────────────────────────────┐
 
-# [FLOW] Interactive picker for changed dotfiles.
+# Interactively copy changes or full files to clipboard
 dcf() {
-    # [CONFIG] Raw git command to bypass aliases
-    local raw_git="git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
-    local changed_files
-    
-    changed_files=$(dotgit status --porcelain)
-    [[ -z "$changed_files" ]] && { echo "No changes found in dotfiles."; return 0; }
+    local files
+    files=$(dotgit status --porcelain)
+
+    [[ -z "$files" ]] && return 0
+
+    local selection
+    selection=$(echo "$files" | fzf \
+        --height=60% \
+        --header="Copy changes/content to clipboard" \
+        --preview='
+git_status=$(echo {} | cut -c1-2)
+file=$(echo {} | cut -c4-)
+
+case "$git_status" in
+  "??")
+      bat --color=always --style=numbers -- "$file"
+      ;;
+  *D)
+      echo "FILE WAS DELETED"
+      git --git-dir=$HOME/.dotfiles --work-tree=$HOME diff --color=always -- "$file"
+      ;;
+  *)
+      git --git-dir=$HOME/.dotfiles --work-tree=$HOME diff --color=always -- "$file" | grep . || \
+      bat --color=always --style=numbers -- "$file"
+      ;;
+esac
+')
+
+    [[ -z "$selection" ]] && return 0
 
     local file
-    
-    # [INFO] Pipeline Strategy: Remove status code, pass path to FZF
-    file=$(echo "$changed_files" | sed 's/^...//' | fzf \
-        --height=40% \
-        --header="Select a file to copy its changes" \
-        --preview-window="right:65%:wrap:border-left" \
-        --preview="$raw_git diff --color=always -- {} | grep . || bat --color=always --style=numbers -- {}") # Preview Diff (tracked) or Content (new)
+    file=$(echo "$selection" | cut -c4-)
 
-    [[ -z "$file" ]] && return 0
-    
-    # [ACTION] Copy content or diff
     if dotgit ls-files --error-unmatch "$file" >/dev/null 2>&1; then
-        # Case 1: Modified or Deleted -> Copy Diff
         dotgit diff --no-color -- "$file" | copy
-        print -P "%F{10}✔ Diff copied for: %B$file%b%f"
     else
-        # Case 2: New/Untracked -> Copy Content
         cat "$file" | copy
-        print -P "%F{14}✔ New file content copied: %B$file%b%f"
     fi
 }
