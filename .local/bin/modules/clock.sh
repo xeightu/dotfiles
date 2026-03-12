@@ -1,25 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-STATE_FILE="/tmp/waybar_clock_state"
+# ┌─── 1. Configuration ───────────────────────────────────────────────────────┐
 
-# Если файла состояния нет, создаем его со значением "time"
-if [ ! -f "$STATE_FILE" ]; then
-  echo "time" >"$STATE_FILE"
-fi
+_state_file="/tmp/waybar_clock_state"
 
-# Читаем текущее состояние
-CURRENT_STATE=$(cat "$STATE_FILE")
+# [NOTE] Ensure initial state exists to prevent read errors on first run
+[[ -f "$_state_file" ]] || echo "time" >"$_state_file"
 
-if [ "$CURRENT_STATE" = "time" ]; then
-  # Показываем время
-  # ★★★ ИСПРАВЛЕНИЕ ЗДЕСЬ ★★★
-  TIME_TEXT=$(date +" %H:%M":%S)
-  TOOLTIP_TEXT=$(date +"%A, %d %B %Y")
-  printf '{"text": "%s", "tooltip": "<big>%s</big>"}\n' "$TIME_TEXT" "$TOOLTIP_TEXT"
+# ┌─── 2. Data Acquisition ────────────────────────────────────────────────────┐
+
+_current_state=$(<"$_state_file")
+_tooltip_text=$(date +"%A, %d %B %Y")
+
+if [[ "$_current_state" == "time" ]]; then
+  # [NOTE] Format: Icon + HH:MM:SS
+  _display_text=$(date +" %H:%M:%S")
 else
-  # Показываем дату
-  # ★★★ ИСПРАВЛЕНИЕ ЗДЕСЬ ★★★
-  DATE_TEXT=$(date +" %d.%m.%Y")
-  TOOLTIP_TEXT=$(date +"%A, %d %B %Y")
-  printf '{"text": "%s", "tooltip": "<big>%s</big>"}\n' "$DATE_TEXT" "$TOOLTIP_TEXT"
+  # [NOTE] Format: Icon + DD.MM.YYYY
+  _display_text=$(date +" %d.%m.%Y")
 fi
+
+# ┌─── 3. Final Output ────────────────────────────────────────────────────────┐
+
+# [NOTE] Returns JSON structure compatible with Waybar's custom module logic
+printf '{"text": "%s", "tooltip": "<big>%s</big>"}\n' "$_display_text" "$_tooltip_text"
