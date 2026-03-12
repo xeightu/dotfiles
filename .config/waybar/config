@@ -1,28 +1,24 @@
-// ┌────────────────────────────────────────────────────────────────────────────┐
-// │                         WAYBAR - MAIN CONFIGURATION                        │
-// └────────────────────────────────────────────────────────────────────────────┘
-{
-    // ┌────────────────────────────────────────────────────────────────────────────┐
-    // │                             MAIN BAR SETTINGS                              │
-    // └────────────────────────────────────────────────────────────────────────────┘
-    // [CONFIG] General settings for the bar's position and appearance.
-    "layer": "top",
-    "position": "top",
-    "height": 40,
-    "spacing": 4,
+// ┌─── 1. Main Configuration ──────────────────────────────────────────────────┐
 
-    // [CONFIG] Module layout for the bar.
+{
+    "layer":            "top",
+    "position":         "top",
+    "height":           40,
+    "spacing":          4,
+
     "modules-left": [
         "hyprland/workspaces",
         "custom/window",
         "mpris"
     ],
+
     "modules-center": [
         "hyprland/language",
         "custom/pomodoro",
         "clock",
-        "custom/dunst"
+        "custom/notification"
     ],
+
     "modules-right": [
         "custom/updates",
         "cpu",
@@ -34,189 +30,169 @@
         "tray"
     ],
 
-    // ┌────────────────────────────────────────────────────────────────────────────┐
-    // │                           MODULE CONFIGURATION                             │
-    // └────────────────────────────────────────────────────────────────────────────┘
 
-    // ┌─────────────────────────────────────────────────┐
-    // │                    LEFT SIDE                    │
-    // └─────────────────────────────────────────────────┘
+// ┌─── 2. Left Modules ────────────────────────────────────────────────────────┐
 
-    // --- Hyprland Workspaces ---
     "hyprland/workspaces": {
-        "disable-scroll": true,
-        "all-outputs": true,
-        "on-click": "activate",
-        "format": "{icon}",
+        "disable-scroll":   true,
+        "all-outputs":      true,
+        "on-click":         "activate",
+        "format":           "{icon}",
         "format-icons": {
-            "default": "",
+            "default":      "",
             "1": "一", "2": "二", "3": "三", "4": "四", "5": "五",
             "6": "六", "7": "七", "8": "八", "9": "九", "10": "〇",
-            "special": "",
-            "urgent": ""
+            "special":      "",
+            "urgent":       ""
         }
     },
 
-    // --- Custom Window Title ---
     "custom/window": {
-        // [INFO] This module is controlled by custom script.
-        "exec": "~/.local/bin/modules/window_title.sh",
-        "return-type": "json",
-        "format": "{}",
-        "max-length": 100
+        "exec":             "~/.local/bin/modules/window_title.sh",
+        "return-type":      "json",
+        "format":           "{}",
+        "max-length":       100
     },
 
-    // --- Media Player ---
     "mpris": {
-        "format": "{player_icon} {dynamic}",
-        "format-paused": "{status_icon} {dynamic}",
-        "dynamic-order": ["title", "artist"],
+        "format":           "{player_icon} {dynamic}",
+        "format-paused":    "{status_icon} {dynamic}",
+        "dynamic-order":    ["title", "artist"],
         "player-icons": {
-            "default": "▶",
-            "mpv": "🎵",
-            "spotify": "",
-            "firefox": ""
+            "default":      "▶",
+            "mpv":          "🎵",
+            "spotify":      "",
+            "firefox":      ""
         },
         "status-icons": {
-            "paused": "⏸"
+            "paused":       "⏸"
         },
-        "max-length": 35
+        "max-length":       50
     },
 
-    // ┌───────────────────────────────────────────────────┐
-    // │                    MIDDLE SIDE                    │
-    // └───────────────────────────────────────────────────┘
 
-    // --- Language ---
+// ┌─── 3. Center Modules ──────────────────────────────────────────────────────┐
+
     "hyprland/language": {
-        "format": "{} ",
-        "format-en": "EN",
-        "format-ru": "RU",
-        "on-click": "hyprctl switchxkblayout at-translated-set-2-keyboard next"
+        "format":           "{} ",
+        "format-en":        "EN",
+        "format-ru":        "RU",
+        "on-click":         "hyprctl switchxkblayout at-translated-set-2-keyboard next"
     },
 
-    // --- Pomodoro (Uair) ---
     "custom/pomodoro": {
-        "format": "{}",
-        "return-type": "json",
-        "exec": "uair",
-        "on-click": "uairctl toggle",
-        "on-click-right": "uairctl next",
-        "tooltip": false
+        "format":           "{}",
+        "return-type":      "json",
+        "exec":             "uair",
+        "on-click":         "uairctl toggle",
+        "on-click-right":   "uairctl next",
+        "tooltip":          false
     },
 
-    // --- Clock Module ---
     "clock": {
-        "interval": 1,
-        "format": " {:%H:%M:%S}",
-        "format-alt": " {:%d.%m.%Y}",
-        "tooltip-format": "<tt>{calendar}</tt>",
+        "interval":         1,
+        "format":           " {:%H:%M:%S}",
+        "format-alt":       " {:%d.%m.%Y}",
+        "tooltip-format":   "<tt>{calendar}</tt>",
         "calendar": {
-            "mode": "month",
+            "mode":         "month",
             "mode-mon-col": 3,
-            "weeks-pos": "right",
-            "on-scroll": 1,
+            "weeks-pos":    "right",
+            "on-scroll":    1,
             "format": {
-                "months":     "<span color='#cba6f7'><b>{}</b></span>", // Mauve
-                "days":       "<span color='#cdd6f4'><b>{}</b></span>", // Text
-                "weeks":      "<span color='#74c7ec'><b>W{}</b></span>", // Sapphire
-                "today":      "<span color='#fab387'><b><u>{}</u></b></span>" // Peach
+                "months":   "<span color='#cba6f7'><b>{}</b></span>",
+                "days":     "<span color='#cdd6f4'><b>{}</b></span>",
+                "weeks":    "<span color='#74c7ec'><b>W{}</b></span>",
+                "today":    "<span color='#fab387'><b><u>{}</u></b></span>"
             }
         },
         "actions": {
             "on-click-right": "mode",
-            "on-scroll-up": "shift_up",
+            "on-scroll-up":   "shift_up",
             "on-scroll-down": "shift_down"
         }
     },
 
-    // --- Notifications ---
-    "custom/dunst": {
-        "format": " {}",
-        "exec": "dunstctl count waiting",
-        "on-click": "kitty --class kitty-notif -e ~/.local/bin/actions/notif_history.sh",
-        "on-click-right": "dunstctl close-all",
-        "interval": 2,
-        "tooltip": true
+    // [NOTE] Syncs Waybar icon with Mako DND state via RTMIN+11 signal
+    "custom/notification": {
+        "tooltip":          false,
+        "format":           "<span size='14pt'>{}</span>",
+        "exec":             "makoctl mode | grep -q 'dnd' && echo '󰂛' || echo '󰂜'",
+        "return-type":      "text",
+        "interval":         "once",
+        "signal":           11,
+        "on-click":         "makoctl mode -t dnd && pkill -RTMIN+11 waybar",
+        "on-click-right":   "makoctl dismiss -a"
     },
 
-    // ┌──────────────────────────────────────────────────┐
-    // │                    RIGHT SIDE                    │
-    // └──────────────────────────────────────────────────┘
 
-    // --- Package Updates ---
+// ┌─── 4. Right Modules ───────────────────────────────────────────────────────┐
+
+    // [NOTE] High interval (15m) to prevent database locks
     "custom/updates": {
-        "exec":     "~/.local/bin/modules/updates.sh",
-        "interval": 900,                                                              // [CONFIG] Check for updates every 15 minutes.
-        "return-type": "json",
-        "format":   "{}",
-        "tooltip":  true,
-        "on-click": "kitty --class kitty-update -e ~/.local/bin/desktop/sysup.sh"
+        "exec":             "~/.local/bin/modules/updates.sh",
+        "interval":         900,
+        "return-type":      "json",
+        "format":           "{}",
+        "tooltip":          true,
+        "on-click":         "kitty --class kitty-update -e ~/.local/bin/desktop/sysup.sh"
     },
 
-    // --- CPU Module ---
     "cpu": {
-        "format":   " {usage}%",
-        "interval": 3,
-        "tooltip":  true
+        "format":           " {usage}%",
+        "interval":         3,
+        "tooltip":          true
     },
 
-    // --- Memory Module ---
     "memory": {
-        "format":   "  {used}GiB",
-        "interval": 3
+        "format":           "  {used}GiB",
+        "interval":         3
     },
 
-    // --- Temperature Module ---
+    // [FIX] Abstracted script for handling non-standard thermal paths
     "custom/temperature": {
-        // [INFO] Uses the smart detection script we wrote.
-        "exec":         "~/.local/bin/modules/temperature.sh",
-        "return-type":  "json",
-        "interval":     3,
-        "tooltip":      true
+        "exec":             "~/.local/bin/modules/temperature.sh",
+        "return-type":      "json",
+        "interval":         3,
+        "tooltip":          true
     },
 
-    // --- Network ---
     "network": {
-        "format-wifi": "{essid}  ",
-        "format-ethernet": "{ifname} 󰈀",
+        "format-wifi":      "{essid}  ",
+        "format-ethernet":  "{ifname} 󰈀",
         "format-disconnected": "Disconnected ⚠",
         "tooltip-format-wifi": "{ipaddr}/{cidr} @ {signalStrength}%",
-        "on-click": "nm-connection-editor"
+        "on-click":         "nm-connection-editor"
     },
 
-    // --- Audio ---
     "pulseaudio": {
-        "scroll-step": 5,
-        "format": "{icon} {volume}%",
-        "format-muted": " Muted",
+        "scroll-step":      5,
+        "format":           "{icon} {volume}%",
+        "format-muted":     " Muted",
         "format-icons": {
-            "default": ["", "", ""],
-            "headphone": "", "headset": ""
+            "default":      ["", "", ""],
+            "headphone":    "",
+            "headset":      ""
         },
-        "tooltip": false,
-        "on-click": "pavucontrol"
+        "tooltip":          false,
+        "on-click":         "pavucontrol"
     },
 
-     // --- Battery ---
-     "battery": {
-         "interval": 60,
-         "states": {
-             "warning": 30,
-             "critical": 15
-         },
-         "format-icons": ["", "", "", "", ""],
-         
-         "format": "{capacity}% {icon}",
-         "format-charging": "{capacity}% {icon}  ",
-         "format-plugged": "{capacity}% {icon}  ",
-         
-         "tooltip-format": "{timeTo} ({power}W)"
-     },
+    "battery": {
+        "interval":         60,
+        "states": {
+            "warning":      30,
+            "critical":     15
+        },
+        "format-icons":     ["", "", "", "", ""],
+        "format":           "{capacity}% {icon}",
+        "format-charging":  "{capacity}% {icon}  ",
+        "format-plugged":   "{capacity}% {icon}  ",
+        "tooltip-format":   "{timeTo} ({power}W)"
+    },
 
-    // --- System Tray ---
     "tray": {
-        "icon-size": 18,
-        "spacing": 10
+        "icon-size":        18,
+        "spacing":          10
     }
 }
