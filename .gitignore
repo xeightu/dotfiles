@@ -1,72 +1,42 @@
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                       GLOBAL GITIGNORE (STRICT)                            │
-# └────────────────────────────────────────────────────────────────────────────┘
-# [CRITICAL] POLICY: DENY ALL (/*).
-# We explicitly allow ONLY the configs we want to track.
-
+# [WARN] Default deny-all policy to ensure only explicit configs are tracked
 /*
 
-# ┌─── 1. Allowed Roots ───────────────────────────────────────────────────────┐
 
+# ┌─── 1. Repository & Shell ──────────────────────────────────────────────────┐
+
+# Core repo metadata
 !/.gitignore
 !/.gitmodules
-!/LICENSE
+!/.mailmap
 !/README.md
+!/LICENSE
+
+# Shell initialization
 !/.zshrc
 !/.p10k.zsh
-!/.mailmap
+
+# Local scripts
 !/.local/
 .local/*
 !/.local/bin/
 !/.local/bin/**
+.local/bin/spotdl
 
-# ┌─── 2. Config Whitelist (The "Allow" List) ─────────────────────────────────┐
-# [INFO] We open the gates only for specific folders in .config.
+
+# ┌─── 2. Desktop Environment ─────────────────────────────────────────────────┐
 
 !/.config/
 .config/*
 
-# --- Shell & Core ---
-!/.config/zsh/
-!/.config/atuin/
-!/.config/environment.d/
-!/.config/mise/
-!/.config/pyre/
-# [INFO] Ignore state inside pyre
-.config/pyre/state
-.config/pyre/main_menu_last_choice
-
-# --- Hyprland Ecosystem ---
+# Hyprland Ecosystem
 !/.config/hypr/
 !/.config/waybar/
 !/.config/wofi/
 !/.config/dunst/
+!/.config/mako/
 !/.config/libinput-gestures.conf
-!/.config/electron-flags.conf
 
-# --- Terminals & Editors ---
-!/.config/kitty/
-!/.config/nvim/
-
-# --- Apps & Tools ---
-!/.config/fastfetch/
-!/.config/imv/
-!/.config/lazygit/
-!/.config/lazydocker/
-!/.config/ttyper/
-!/.config/uair/
-!/.config/gammastep/
-!/.config/dooit/
-!/.config/pupgui/
-!/.config/sampler/
-!/.config/glow/
-.local/bin/spotdl
-.config/spicetify/config-xpui.ini
-.config/gtk-3.0/bookmarks
-.config/btop/
-!/.config/cava/
-
-# --- System & GUI ---
+# Theme & GUI Toolkits
 !/.config/gtk-3.0/
 !/.config/gtk-4.0/
 !/.config/qt6ct/
@@ -74,49 +44,92 @@
 !/.config/nwg-look/
 !/.config/lxqt/
 
-# ┌─── 3. Surgical Exceptions (Partial Allows) ────────────────────────────────┐
-# [INFO] Folders where we want config files, but NOT the heavy data/bloat.
+# [NOTE] Persistence & State exclusions
+.config/gtk-3.0/bookmarks
+!/.config/electron-flags.conf
 
-# --- Clipse (Clipboard) ---
-# [INFO] Block the binary DB, allow config JSONs.
+
+# ┌─── 3. Development & Productivity ──────────────────────────────────────────┐
+
+# Terminals & Editors
+!/.config/kitty/
+!/.config/nvim/
+
+# Runtimes & History
+!/.config/zsh/
+!/.config/atuin/
+!/.config/mise/
+!/.config/environment.d/
+
+# CLI Utilities
+!/.config/fastfetch/
+!/.config/lazygit/
+!/.config/lazydocker/
+!/.config/mise/
+!/.config/uair/
+!/.config/ttyper/
+!/.config/gammastep/
+
+
+# ┌─── 4. Specialized App Handling ────────────────────────────────────────────┐
+
+# Pyre Engine
+!/.config/pyre/
+.config/pyre/state
+.config/pyre/main_menu_last_choice
+
+# Media & Visuals
+!/.config/cava/
+.config/cava/shaders/
+!/.config/imv/
+!/.config/glow/
+!/.config/sampler/
+!/.config/pupgui/
+!/.config/dooit/
+
+# Clipse (Clipboard)
 !/.config/clipse/
 .config/clipse/*
 !/.config/clipse/*.json
-.config/clipse/clipboard_history.json
 !/.config/clipse/*.png
+# [WARN] Sensitive clipboard data
+.config/clipse/clipboard_history.json
 
-# --- Spicetify ---
-# [INFO] Block backups/binaries, allow CSS and ini.
+# Spicetify (Spotify)
 !/.config/spicetify/
 .config/spicetify/*
 !/.config/spicetify/*.css
 !/.config/spicetify/*.ini
 
-# --- Systemd ---
-# [INFO] Block symlinks (.wants), allow real units.
+# Systemd Units
 !/.config/systemd/user/
 .config/systemd/user/*.wants/
 .config/systemd/user/playerctld.service
 
-# ┌─── 4. Global Noise Filters (Double Check) ─────────────────────────────────┐
-# [INFO] Safety net in case an allowed folder contains junk or secrets.
 
+# ┌─── 5. System Protection & Security ────────────────────────────────────────┐
+
+# [NOTE] Global noise and cache filters
 *.log
 *.tmp
 *.bak
+*.zwc
 *.swp
 *~
 .DS_Store
 __pycache__/
 node_modules/
+.config/btop/
 
-# --- Secrets ---
+# [WARN] Critical: Security vaults and private credentials
 .config/Bitwarden/
 .config/keepassxc/
 .config/Proton/
 *.kdbx
 id_rsa
 id_ed25519
+
+# [WARN] Prevent leakage of shell history (tokens, passwords)
 .zsh_history
 .bash_history
 .config/spicetify/config-xpui.ini
