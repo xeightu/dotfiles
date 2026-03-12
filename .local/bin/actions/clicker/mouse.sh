@@ -1,80 +1,77 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌─── High-Performance Mouse Clicker ─────────────────────────────────────────┐
-# │ Architecture: Batch execution with Game-Tick synchronization.              │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Configuration & Constants ───────────────────────────────────────────┐
 
-BUTTON_TYPE="${1:-left}"
-PID_FILE="/tmp/clicker_${BUTTON_TYPE}.pid"
+BTN_TYPE="${1:-left}"
+PID_FILE="/tmp/clicker_${BTN_TYPE}.pid"
 
-# ┌─── Configuration ──────────────────────────────────────────────────────────┐
+# [NOTE] 0.02s ≈ 50Hz; aligns with common game tick rates
+SLEEP_TIME="0.02"
 
-# [CONFIG] Button Codes
-case "$BUTTON_TYPE" in
+# [NOTE] 20 clicks per tick saturate most input buffers without overflow
+BATCH_SIZE=20
+
+case "$BTN_TYPE" in
 "left") CODE="272" ;;
 "right") CODE="273" ;;
 "middle") CODE="274" ;;
 *)
-  notify-send "Clicker Error" "Unknown button: $1"
+  notify-send "Automation" "Error: Unknown button '$BTN_TYPE'" -u critical -i "error"
   exit 1
   ;;
 esac
 
-# [CONFIG] Batch Size & Timing
-# - BATCH:  Number of clicks sent per command (20 is safer for games).
-# - SLEEP:  Delay to match Game Tick Rate (0.02s ~= 50 ticks/sec).
-BATCH_SIZE=20
-SLEEP_TIME=0.02
+# ┌─── 2. Internal Helpers ────────────────────────────────────────────────────┐
 
-# ┌─── Generator ──────────────────────────────────────────────────────────────┐
+# [NOTE] Ensure ydotool daemon is available for IPC
+check_env() {
+  if ! pgrep -x "ydotoold" >/dev/null; then
+    notify-send "Automation" "Error: ydotoold not running" -u critical -i "error"
+    exit 1
+  fi
+}
 
-# [INFO] Construct argument list.
-# 20 clicks = 40 events. Efficient but digestible for game engines.
+# [NOTE] Pre-generate burst payload to reduce per-iteration overhead
+generate_payload() {
+  local payload=""
+  for _ in $(seq 1 "$BATCH_SIZE"); do
+    payload+="$CODE:1 $CODE:0 "
+  done
+  echo "$payload"
+}
 
-BURST_CMD=""
+# ┌─── 3. Execution Controller (Toggle) ───────────────────────────────────────┐
 
-for _ in $(seq 1 "$BATCH_SIZE"); do
-  BURST_CMD+="$CODE:1 $CODE:0 "
-done
+if [[ -f "$PID_FILE" ]]; then
+  pid=$(<"$PID_FILE")
 
-# ┌─── Main Logic ─────────────────────────────────────────────────────────────┐
+  # [FIX] Force-terminate loop and its children to avoid orphaned ydotool processes
+  pkill -P "$pid" 2>/dev/null
+  kill -9 "$pid" 2>/dev/null
 
-# [FIX] Check process health
-if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-
-  # --- Stop Sequence ---
-
-  kill "$(cat "$PID_FILE")"
   rm -f "$PID_FILE"
 
-  notify-send "Clicker ($BUTTON_TYPE): OFF" \
-    -i "process-stop" \
-    -u "low" \
-    -t 500
-
-else
-
-  # --- Start Sequence ---
-
-  [ -f "$PID_FILE" ] && rm -f "$PID_FILE"
-
-  notify-send "Clicker ($BUTTON_TYPE): ON" \
-    -i "input-mouse" \
-    -u "critical" \
-    -t 500
-
-  (
-    trap 'rm -f "$PID_FILE"' EXIT
-
-    # [CRITICAL] Syntax Fix:
-    # Variable must be UNQUOTED ($BURST_CMD) to allow argument splitting.
-    while true; do
-      # shellcheck disable=SC2086
-      ydotool key $BURST_CMD
-      sleep "$SLEEP_TIME"
-    done
-  ) &
-
-  echo $! >"$PID_FILE"
-
+  notify-send "Automation" "Clicker ($BTN_TYPE): OFF" -i "process-stop" -u low -t 800
+  exit 0
 fi
+
+# ┌─── 4. Activation & Background Loop ────────────────────────────────────────┐
+
+check_env
+PAYLOAD="$(generate_payload)"
+
+# [WARN] High-frequency input simulation starts immediately
+notify-send "Automation" "Clicker ($BTN_TYPE): ON" -i "input-mouse" -u critical -t 1000
+
+(
+  # [NOTE] Ensure PID file cleanup on external termination
+  trap 'rm -f "$PID_FILE"' EXIT INT TERM
+
+  while true; do
+    # [NOTE] Word splitting intentional to pass burst as discrete arguments
+    ydotool key $PAYLOAD 2>/dev/null || break
+    sleep "$SLEEP_TIME"
+  done
+) &
+
+echo $! >"$PID_FILE"
