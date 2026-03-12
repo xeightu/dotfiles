@@ -1,103 +1,100 @@
-# ┌─── 5. Aliases ─────────────────────────────────────────────────────────────┐
-# │  [INFO] Command shortcuts, modern tool replacements, and safety wrappers.    │
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. Shell Fundamentals & Safety ─────────────────────────────────────────┐
 
+# [FIX] Allow aliases to be expanded after sudo
+alias sudo="sudo "
 
-# ┌── 5.1. Core & Safety ──────────────────────────────────────────────────────┐
+# Rerun last command as root
+alias pls='sudo $(fc -ln -1)'
 
-alias sudo="sudo "                              # [OPT] Allow alias expansion
-alias pls='sudo $(fc -ln -1)'                   # [FIX] Retrospective sudo (Zsh native)
-alias sedit="sudo -e"                           # [OPT] Sudo edit logic
-alias c="clear"                                 # Quick clear
-alias q="exit"                                  # [FLOW] Quick exit (Builtin)
-alias h="history"                               # [FLOW] Show history (Builtin)
+# [WARN] Interactive prompts to prevent accidental data loss
+alias cp="cp -iv"
+alias mv="mv -iv"
+alias ln="ln -iv"
+alias mkdir="mkdir -pv"
 
-# [CRIT] Safety nets to prevent accidental overwrites
-alias cp="cp -iv"                               
-alias mv="mv -iv"                               
-alias ln="ln -iv"                               
+# [WARN] Replace destructive 'rm' with 'rip' (trash-bin)
+alias rm="rip"
+alias rml="rip -s"
+alias rmu="rip -u"
+alias rmd="rip -d"
+alias rmr="rip -s 2>/dev/null | fzf | xargs -I{} rip -u '{}'"
 
-# [CRIT] Trash redirection via 'rip-bin'
-alias rm="rip"                                  # [FLOW] Use trash instead of rm
-alias rm!="command rm"                          # [CRIT] Bypass trash (Force)
-alias rml="rip -s"                              # [FLOW] List trash
-alias rmu="rip -u"                              # [FLOW] Undo delete
-alias rmd="rip -d"                              # [CRIT] Empty trash
-alias rmr="rip -s 2>/dev/null | fzf | xargs -I{} rip -u '{}'" # [OPT] Interactive restore
+# [WARN] Actual file destruction
+alias rm!="command rm"
 
-
-# ┌── 5.2. Filesystem & Navigation ────────────────────────────────────────────┐
-
-alias cpwd="pwd | copy"                         # [OPT] Copy path to clipboard
-alias cx="chmod +x"                             # [OPT] Quick executable
-alias x="ouch decompress"                       # [OPT] Smart extraction
-alias pack="ouch compress"                      # [OPT] Smart compression
-alias o="xdg-open"                              # [FLOW] Open via default app
-
+# Navigation & Basic shortcuts
+alias c="clear"
+alias q="exit"
+alias h="history"
+alias sedit="sudo -e"
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
-alias cdi="zi"                                  # [OPT] Interactive zoxide jump
+alias cdi="zi"
+alias cpwd="pwd | copy"
+
+# [NOTE] Column-formatted PATH for easy debugging
+alias path='echo -e ${PATH//:/\\n}'
 
 
-# ┌── 5.3. Modern Tool Replacements ───────────────────────────────────────────┐
+# ┌─── 2. Daily Productivity (Search & View) ──────────────────────────────────┐
 
-# [OPT] Eza: Modern 'ls' replacement
-_ls_cmd="eza --icons --group-directories-first --git"
+# [NOTE] Modular eza configuration with Git integration
+_EZA_BASE="eza --icons --group-directories-first --git"
 if command -v eza >/dev/null 2>&1; then
-    alias ls="$_ls_cmd"
-    alias ll="$_ls_cmd -lh --header"
-    alias la="$_ls_cmd -lha --header"
-    alias lt="$_ls_cmd --tree --level=2"
-    alias ltf="$_ls_cmd --tree --level=10"
-    alias lsz="$_ls_cmd -lrh --sort=size"
-    alias ld="$_ls_cmd -lrh --sort=modified"
+    alias ls="$_EZA_BASE"
+    alias ll="$_EZA_BASE -lh --header"
+    alias la="$_EZA_BASE -lha --header"
+    alias lt="$_EZA_BASE --tree --level=2"
+    alias ltf="$_EZA_BASE --tree --level=10"
+    alias lsz="$_EZA_BASE -lrh --sort=size"
+    alias ld="$_EZA_BASE -lrh --sort=modified"
 fi
-unset _ls_cmd
+unset _EZA_BASE
 
-alias cat="bat --paging=never --style=plain"    # [OPT] Syntax highlighted cat
-alias less="bat --paging=always"                # [OPT] Syntax highlighted pager
-alias v="nvim"                                  # [CFG] Editor shortcut
+# Bat / Nvim
+# [NOTE] bat --style=header provides file boundaries for multiple arguments
+alias cat="bat --style=header --paging=never"
+alias less="bat --paging=always"
+alias v="nvim"
 alias vim="nvim"
+alias o="xdg-open"
 
-alias grep="rg"                                 # [OPT] Faster search (Ripgrep)
-alias find="fd"                                 # [OPT] Faster find (fd)
-alias df="duf"                                  # [OPT] Visual disk usage
-alias du="dust"                                 # [OPT] Visual directory usage
-alias ping="gping"                              # [OPT] Graphical ping telemetry
+# Search & Monitoring
+alias grep="rg"
+alias find="fd"
+alias df="duf"
+alias du="dust"
 
-# [OPT] Process & Network monitoring
 if command -v procs >/dev/null 2>&1; then
-    alias ps="procs"                            
-    alias pst="procs --tree"                    
-    alias psw="procs --watch"                   
-    alias fdopen="procs --insert file"          
+    alias ps="procs"
+    alias pst="procs --tree"
+    alias psw="procs --watch"
+    alias fdopen="procs --insert file"
 fi
 
-alias net="sudo bandwhich"                      # [OPT] Traffic monitor
-alias trace="trip"                              # [OPT] Modern traceroute
-alias lsof="sudo lsfd"                          # [OPT] Modern/faster lsof
 
+# ┌─── 3. Development (Git & Dotfiles) ────────────────────────────────────────┐
 
-# ┌── 5.4. Git & Dotfiles (The Mirror) ────────────────────────────────────────┐
-
-alias g="git"                                   # [FLOW] Base git
+alias g="git"
 alias ga="git add"
 alias gaa="git add --all"
 alias gst="git status"
 alias gdiff="git diff"
 alias gc="git commit -m"
 alias gca="git commit --v --amend"
-alias gca!="git commit --v --amend --no-edit"   
+alias gca!="git commit --v --amend --no-edit"
 alias gp="git push"
 alias gl="git pull"
+alias gcl="git clone"
+alias gcp="git cherry-pick"
 alias grs="git restore"
 alias grss="git restore --staged"
-alias lg="lazygit"                              
+alias lg="lazygit"
 
-# [FLOW] Dotfiles management via Bare Repository
+# Bare repository management
 alias dot="dotgit"
-alias dst="dotgit status"
+alias dst="dotgit status -sb"
 alias ddiff="dotgit diff"
 alias da="dotgit add"
 alias daa="dotgit add -u"
@@ -108,71 +105,88 @@ alias dp="dotgit push"
 alias dl="dotgit pull"
 alias drs="dotgit restore"
 alias drss="dotgit restore --staged"
+
+# [FIX] Force lazygit to use the bare repository context
 alias ldot="lazygit --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
 
 
-# ┌── 5.5. Zsh Superpowers ────────────────────────────────────────────────────┐
+# ┌─── 4. Hardware & System Services ──────────────────────────────────────────┐
 
-# [FLOW] Suffix Aliases: Open files by typing their name
-alias -s {md,txt,yaml,json,toml,lua,conf,ini}="nvim"
-alias -s {png,jpg,jpeg,gif,webp}="imv"
-alias -s {mp4,mkv,mov,webm}="mpv"
-alias -s {pdf}="zathura"
+_BR_LOCK="${XDG_RUNTIME_DIR:-/tmp}/brightness_disabled"
 
-# [FLOW] Global Aliases: Expand anywhere in the command line
-alias -g G="| rg"                               
-alias -g L="| less"                             
-alias -g C="| copy"                             
-alias -g N="> /dev/null 2>&1"                   
+# [NOTE] Soft Mocha-themed status notifications (Pastel Green/Peach/Mauve)
+alias bon="command rm -f \"$_BR_LOCK\" && print -P '%F{151}󰖨  Auto-brightness re-enabled.%f'"
+alias boff="touch \"$_BR_LOCK\" && print -P '%F{216}󰓄  Auto-brightness suspended.%f'"
+alias breset="print -P '%F{183}󰑐 Triggering re-sync...%f' && ~/.local/bin/brightness-manager --force"
+
+# System Control
+alias soundfix="systemctl --user restart pipewire wireplumber pipewire-pulse"
+alias st="systemctl --user enable --now syncthing"
 
 
-# ┌── 5.6. Applications & Utilities ───────────────────────────────────────────┐
+# ┌─── 5. Apps & Package Management ───────────────────────────────────────────┐
 
-# [CFG] System Tools
-alias update="~/.local/bin/desktop/sysup.sh"
-alias menu="~/.local/bin/desktop/sysmenu.sh"
-alias install="paru -S"
-alias remove="paru -Rns"
-alias search="paru -Ss"
+alias i="paru -S"
+alias re="paru -Rns"
+alias s="paru -Ss"
 alias aideupd="sudo aide-update"
 
-# [OPT] TUI Apps
+alias u="~/.local/bin/desktop/sysup.sh"
+alias menu="~/.local/bin/desktop/sysmenu.sh"
+
 alias top="btop"
 alias lzd="lazydocker"
+alias sampler="sampler --config ~/.config/sampler/sampler.yml"
+alias py="python"
+alias ff="fastfetch"
+alias m="mailsy"
+
+# Multiplexers
 alias zj="zellij"
 alias za="zellij attach"
 alias zk="zellij kill-all-sessions"
-alias sampler="sampler --config ~/.config/sampler/sampler.yml"
-alias py="python"
 
-# [OPT] Typing Practice
+# QoL Tools
 alias tt="ttyper"
 alias ttru="ttyper --language-file ~/.config/ttyper/languages/russian"
 alias ttpy="ttyper -l python"
 
 
-# ┌── 5.7. Network Transfer (Copyparty) ───────────────────────────────────────┐
+# ┌─── 6. Network & External Tools ────────────────────────────────────────────┐
 
-_cp_cmd="~/.local/bin/copyparty-sfx.py"
-alias host="$_cp_cmd"                           # [FLOW] Read-Only mode
-alias share="$_cp_cmd -v .::rw"                 # [FLOW] Read/Write mode
-alias drop="$_cp_cmd -v .::rw --nols"           # [CRIT] Blind upload
-alias qshare="$_cp_cmd -v .::rw --qr"           # [OPT] Share + QR Code
-alias qdrop="$_cp_cmd -v .::rw --nols --qr"     # [OPT] Drop + QR Code
-alias vault="$_cp_cmd -a admin:123 -v .::rw:A"  # [CRIT] Password Protected
-unset _cp_cmd
+alias ip="ip -c"
+alias ipb="ip -brief -color address"
+alias ipl="ip -brief -color link"
+alias ping="gping"
+alias net="sudo bandwhich"
+alias trace="trip"
+alias lsof="sudo lsfd"
+
+# Temporary file server (copyparty)
+_CP_CMD="~/.local/bin/copyparty-sfx.py"
+alias host="$_CP_CMD"
+alias share="$_CP_CMD -v .::rw"
+alias drop="$_CP_CMD -v .::rw --nols"
+alias qshare="$_CP_CMD -v .::rw --qr"
+alias qdrop="$_CP_CMD -v .::rw --nols --qr"
+alias vault="$_CP_CMD -a admin:123 -v .::rw:A"
+unset _CP_CMD
 
 
-# ┌── 5.8. Hardware & Services ────────────────────────────────────────────────┐
+# ┌─── 7. File Automation & Global Filters ────────────────────────────────────┐
 
-# [FIX] Audio & Sync services
-alias soundfix="systemctl --user restart pipewire wireplumber pipewire-pulse"
-alias st="systemctl --user enable --now syncthing"
+alias x="ouch decompress"
+alias pack="ouch compress"
+alias cx="chmod +x"
 
-# [FIX] Brightness manager state control
-alias breset="~/.local/bin/brightness-manager --force"
-alias blog="journalctl --user -u brightness-manager -n 20 --no-pager"
+# [NOTE] Suffix aliases: Automatically open files by extension in $EDITOR
+alias -s {md,txt,yaml,json,toml,lua,conf,ini,zsh,py}="nvim"
+alias -s {png,jpg,jpeg,gif,webp}="imv"
+alias -s {mp4,mkv,mov,webm}="mpv"
+alias -s {pdf}="zathura"
 
-_br_lock="${XDG_RUNTIME_DIR:-/tmp}/brightness_disabled"
-alias bon="command rm -f \"$_br_lock\" && echo 'Auto brightness re-enabled.'"
-alias boff="touch \"$_br_lock\" && echo 'Auto brightness disabled.'"
+# Global aliases: Quick pipeline filters
+alias -g G="| rg"
+alias -g L="| less"
+alias -g C="| copy"
+alias -g N="> /dev/null 2>&1"
