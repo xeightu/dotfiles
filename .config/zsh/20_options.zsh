@@ -1,36 +1,55 @@
-# ┌─── 2. Zsh Core & Options ──────────────────────────────────────────────────┐
-# │  [INFO] Local session logic and shell behavior settings.
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 1. History Configuration ───────────────────────────────────────────────┐
 
-# ┌── 2.1. History (Session Buffer) ───────────────────────────────────────────┐
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE="$HOME/.zsh_history"
 
-HISTSIZE=10000                                  # [CFG] Internal buffer size
-SAVEHIST=10000                                  # [CFG] Persistent limit
-HISTFILE="$HOME/.zsh_history"                   # [CFG] Local fallback file
+# Share history across concurrent shell sessions
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
 
-setopt APPEND_HISTORY                           # [FLOW] Merge session history
-setopt INC_APPEND_HISTORY                       # [FIX] Write immediately (crash safety)
-setopt HIST_IGNORE_SPACE                        # [CRIT] Stealth mode: don't log space-prefixed
-setopt HIST_VERIFY                              # [CRIT] Safety: show expansion before exec
+# [WARN] Skip recording commands starting with a space to prevent secret leaks
+setopt HIST_IGNORE_SPACE
 
-
-# ┌── 2.2. Navigation & Globbing ──────────────────────────────────────────────┐
-
-setopt AUTO_CD                                  # [FLOW] Direct directory execution
-setopt AUTO_PUSHD                               # [FLOW] Build directory stack on cd
-setopt PUSHD_IGNORE_DUPS                        # [OPT] Clean stack: no duplicates
-setopt PUSHD_SILENT                             # [OPT] Silent stack management
-
-setopt EXTENDED_GLOB                            # [OPT] Enable regex-like patterns (^, ~, #)
-setopt NOMATCH                                  # [FIX] Enforce error on failed glob
+# Load history expansion into the buffer for editing before execution
+setopt HIST_VERIFY
 
 
-# ┌── 2.3. UX & Framework ─────────────────────────────────────────────────────┐
+# ┌─── 2. Directory Navigation ────────────────────────────────────────────────┐
 
-setopt CORRECT                                  # [OPT] Suggest spelling fixes
-setopt NO_BEEP                                  # [OPT] Silence terminal bell
-setopt NOTIFY                                   # [FLOW] Immediate bg job status
-setopt NO_HUP                                   # [OPT] Persist bg jobs on shell exit
+# Change directory by typing the path without 'cd'
+setopt AUTO_CD
 
-export ZSH_THEME="powerlevel10k/powerlevel10k"  # [CFG] Visual skin
-zstyle ":omz:update" mode reminder              # [CFG] Update alerts only
+# Maintain a deduplicated directory stack for fast 'cd -' navigation
+setopt AUTO_PUSHD
+setopt PUSHD_IGNORE_DUPS
+setopt PUSHD_SILENT
+
+
+# ┌─── 3. Globbing & Matching ─────────────────────────────────────────────────┐
+
+# Enable advanced pattern matching (e.g., ^, ~, #)
+setopt EXTENDED_GLOB
+
+# Throw an error if a glob pattern finds no matches
+setopt NOMATCH
+
+
+# ┌─── 4. Shell UX & Job Control ──────────────────────────────────────────────┐
+
+setopt CORRECT
+setopt NO_BEEP
+
+# Report background job status changes immediately
+setopt NOTIFY
+
+# [WARN] Prevent background jobs from being terminated when the shell exits
+setopt NO_HUP
+
+
+# ┌─── 5. UI & Framework ──────────────────────────────────────────────────────┐
+
+export ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# Non-blocking framework update reminders
+zstyle ":omz:update" mode reminder
