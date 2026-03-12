@@ -1,101 +1,120 @@
 #!/usr/bin/env bash
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │ AUTOMATED UPDATE PIPELINE                                                  │
-# └────────────────────────────────────────────────────────────────────────────┘
 
-# [INFO] Resolve absolute path to load library safely
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-source "$SCRIPT_DIR/syslib.sh"
+# ┌─── 1. Global Environment ──────────────────────────────────────────────────┐
 
-# ┌─── Configuration ──────────────────────────────────────────────────────────┐
+# [NOTE] Resolve absolute path to ensure the library is sourced correctly
+_script_dir="$(dirname "$(realpath "$0")")"
+
+if [[ -f "$_script_dir/syslib.sh" ]]; then
+  source "$_script_dir/syslib.sh"
+else
+  echo "Error: syslib.sh not found in $_script_dir" >&2
+  exit 1
+fi
 
 LOCK_FILE="/tmp/sysup.lock"
 LOG_FILE="/var/log/pacman.log"
 
-# [CONFIG] Regex for packages requiring reboot
-# Includes kernel, microcode, systemd, and filesystem drivers
-CRITICAL_REGEX="(linux|nvidia|systemd|wayland|mesa|.*-ucode|linux-firmware|cryptsetup|btrfs-progs)"
+# [NOTE] Precise package names prevent false positives like 'util-linux'
+REBOOT_PKGS_CORE=("linux" "linux-lts" "linux-zen" "linux-hardened" "linux-firmware")
+REBOOT_PKGS_DRV=("nvidia" "nvidia-lts" "nvidia-dkms" "mesa" "vulkan-icd-loader")
+REBOOT_PKGS_SYS=("systemd" "glibc" "dbus" "openssl" "pam" "wayland" "hyprland")
+REBOOT_PKGS_BOOT=("grub" "mkinitcpio" "dracut" "efibootmgr" "cryptsetup")
 
-# ┌─── Process Safety ─────────────────────────────────────────────────────────┐
+# [NOTE] Combine all arrays into one before joining with '|' to avoid spaces in regex
+_all_reboot_pkgs=("${REBOOT_PKGS_CORE[@]}" "${REBOOT_PKGS_DRV[@]}" "${REBOOT_PKGS_SYS[@]}" "${REBOOT_PKGS_BOOT[@]}")
+REBOOT_PKG_REGEX="\b($(
+  IFS='|'
+  echo "${_all_reboot_pkgs[*]}"
+))\b"
 
-acquire_lock() {
-  if [[ -f "$LOCK_FILE" ]]; then
-    local pid
-    pid=$(cat "$LOCK_FILE")
+# ┌─── 2. Process Safety & Execution Guards ───────────────────────────────────┐
 
-    # [CHECK] Is the process actually alive?
-    if ps -p "$pid" >/dev/null 2>&1; then
-      die "Update is already running (PID: $pid)"
-    else
-      # [FIX] Stale lock detected
-      rm -f "$LOCK_FILE"
+_check_requirements() {
+  local _deps=(sudo python3 awk sed grep wc)
+  for _tool in "${_deps[@]}"; do
+    command -v "$_tool" &>/dev/null || die "Missing dependency: $_tool"
+  done
+}
+
+_acquire_lock() {
+  exec 9>>"$LOCK_FILE"
+
+  if ! flock -n 9; then
+    die "Update is already running."
+  fi
+}
+
+_cleanup_trap() {
+  # [WARN] Revoke sudo token on exit to prevent unauthorized session reuse
+  sudo -k
+}
+
+trap _cleanup_trap EXIT INT TERM
+
+# ┌─── 3. Reboot Analysis ─────────────────────────────────────────────────────┐
+
+analyze_reboot_necessity() {
+  local _log_start_line="$1"
+  local _update_detected=0
+
+  # [NOTE] Arch Linux removes old kernel modules immediately after update;
+  # failing to reboot will break new module loading for the current session.
+  if [[ -f "$LOG_FILE" ]]; then
+    # Use -w for word-regexp matching as an extra safety layer
+    local _changes
+    _changes=$(sudo tail -n +"$((_log_start_line + 1))" "$LOG_FILE" | grep -E "\[ALPM\] upgraded $REBOOT_PKG_REGEX")
+
+    if [[ -n "$_changes" ]]; then
+      _update_detected=1
+      printf "\n%b%b[CRITICAL] Core components updated:%b\n" "${CLR_BOLD}" "${CLR_WARN}" "${CLR_NC}"
+      echo "$_changes" | awk '{print "   ➜ " $4}'
     fi
   fi
-  echo $$ >"$LOCK_FILE"
-}
 
-cleanup_trap() {
-  sudo -k # [SEC] Revoke sudo token
-  rm -f "$LOCK_FILE"
-}
-trap cleanup_trap EXIT INT TERM
-
-# ┌─── Logic: Reboot Analysis ─────────────────────────────────────────────────┐
-
-analyze_reboot() {
-  [[ ! -f "$LOG_FILE" ]] && return
-
-  # [LOGIC] Compare log size before/after update
-  # $START_LINE is captured in main()
-  local changes
-  changes=$(tail -n +$((START_LINE + 1)) "$LOG_FILE" | grep -E "\[ALPM\] upgraded $CRITICAL_REGEX")
-
-  if [[ -n "$changes" ]]; then
-    printf "\n%b[CRITICAL] Core components updated:%b\n" "${C_RED}" "${C_NC}"
-
-    # [VISUAL] Format output nicely
-    echo "$changes" | awk '{print "   " $4 " " $5}' | sed 's/upgraded//'
-    echo ""
-
-    if ask "Reboot system now?" "Y"; then
+  if [[ $_update_detected -eq 1 ]]; then
+    # [WARN] Delaying reboot after kernel/systemd updates may lead to system instability
+    if ask "A reboot is recommended. Reboot now?" "Y"; then
       systemctl reboot
     fi
   else
-    printf "\n%bSystem up to date. No reboot required.%b\n" "${C_GREEN}" "${C_NC}"
+    printf "\n%bSystem updated successfully. No reboot required.%b\n" "${CLR_OK}" "${CLR_NC}"
   fi
 }
 
-# ┌─── Main Execution ─────────────────────────────────────────────────────────┐
+# ┌─── 4. Main Execution Pipeline ─────────────────────────────────────────────┐
 
 main() {
-  # 1. Initialization
-  acquire_lock
+  _check_requirements
+  _acquire_lock
   require_network
-
-  # [HACK] Capture log position *before* any transaction
-  START_LINE=$(wc -l <"$LOG_FILE" 2>/dev/null || echo 0)
-
-  # 2. Intelligence Layer (Bash)
-  # Tasks that Topgrade cannot perform interactively
-  check_news
+  # [NOTE] Capture log state before transaction for post-update delta analysis
+  local _initial_log_line
+  _initial_log_line=$(sudo cat "$LOG_FILE" 2>/dev/null | wc -l)
+  _initial_log_line=${_initial_log_line:-0}
+  check_arch_news
   smart_snapshot
+  render_banner "SYSTEM UPDATE"
+  if ask "Start full system update via Topgrade?" "Y"; then
+    if has_command topgrade; then
+      topgrade
+      _tg_res=$?
 
-  # 3. Execution Layer (Rust/Topgrade)
-  # Topgrade handles: Mirrors, Updates, Cleanup
-  banner "SYSTEM UPDATE"
-  if ask "Start full system update?" "Y"; then
-    topgrade
+      if [[ $_tg_res -eq 1 ]]; then
+        printf "\n%b[NOTE] Update sequence was interrupted or skipped by user.%b\n" "${CLR_WARN}" "${CLR_NC}"
+      elif [[ $_tg_res -ne 0 ]]; then
+        die "Topgrade failed with exit code $_tg_res."
+      fi
+    else
+      $PKG_CMD -Syu || die "Package manager execution failed. Aborting."
+    fi
   else
-    echo ""
-    printf "%b[INFO] Update skipped by user.%b\n" "${C_YELLOW}" "${C_NC}"
+    printf "\n%bUpdate cancelled by user.%b\n" "${CLR_WARN}" "${CLR_NC}"
     exit 0
   fi
-
-  # 4. Analysis Layer (Bash)
-  analyze_reboot
-
-  echo ""
-  read -r -p "Press Enter to exit..."
+  analyze_reboot_necessity "$_initial_log_line"
+  printf "\n%bPress Enter to exit...%b" "${CLR_SUB}" "${CLR_NC}"
+  read -r
 }
 
 main
