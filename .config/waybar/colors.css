@@ -1,47 +1,49 @@
-/* ┌─── Catppuccin Mocha Palette ──────────────────────────────────────────────┐ */
-/* │  [INFO] Standardized color definitions for Waybar.                        │ */
-/* └───────────────────────────────────────────────────────────────────────────┘ */
+/* ┌─── 1. Primary Accents ─────────────────────────────────────────────────────┐ */
 
+/* Vibrant tones for active modules and primary highlights */
+@define-color mauve     #cba6f7;
+@define-color lavender  #b4befe;
+@define-color blue      #89b4fa;
+@define-color sky       #89dceb;
+@define-color sapphire  #74c7ec;
+@define-color teal      #94e2d5;
+@define-color green     #a6e3a1;
 
-/* ┌─── Accent Colors ─────────────────────────────────────────────────────────┐ */
+/* ┌─── 2. Status & Warm Tones ─────────────────────────────────────────────────┐ */
 
-/* --- Warm Tones --- */
-@define-color rosewater #f5e0dc;        /* Rosewater */
-@define-color flamingo  #f2cdcd;        /* Flamingo */
-@define-color pink      #f5c2e7;        /* Pink */
-@define-color mauve     #cba6f7;        /* Mauve */
-@define-color red       #f38ba8;        /* Red */
-@define-color maroon    #eba0ac;        /* Maroon */
-@define-color peach     #fab387;        /* Peach */
-@define-color yellow    #f9e2af;        /* Yellow */
+/* [NOTE] Used for warnings, errors, and critical battery states */
+@define-color red       #f38ba8;
+@define-color maroon    #eba0ac;
+@define-color peach     #fab387;
+@define-color yellow    #f9e2af;
 
-/* --- Cool Tones --- */
-@define-color green     #a6e3a1;        /* Green */
-@define-color teal      #94e2d5;        /* Teal */
-@define-color sky       #89dceb;        /* Sky */
-@define-color sapphire  #74c7ec;        /* Sapphire */
-@define-color blue      #89b4fa;        /* Blue */
-@define-color lavender  #b4befe;        /* Lavender */
+/* Aesthetic variations */
+@define-color pink      #f5c2e7;
+@define-color flamingo  #f2cdcd;
+@define-color rosewater #f5e0dc;
 
+/* ┌─── 3. Typography Hierarchy ────────────────────────────────────────────────┐ */
 
-/* ┌─── Neutral Tones ─────────────────────────────────────────────────────────┐ */
+/* Text levels for primary and secondary information */
+@define-color text      #cdd6f4;
+@define-color subtext1  #bac2de;
+@define-color subtext0  #a6adc8;
 
-/* --- Typography --- */
-@define-color text      #cdd6f4;        /* Main Text */
-@define-color subtext1  #bac2de;        /* Subtext 1 */
-@define-color subtext0  #a6adc8;        /* Subtext 0 */
+/* ┌─── 4. UI Surfaces & Depth ─────────────────────────────────────────────────┐ */
 
-/* --- Overlays --- */
-@define-color overlay2  #9399b2;        /* Overlay 2 */
-@define-color overlay1  #7f849c;        /* Overlay 1 */
-@define-color overlay0  #6c7086;        /* Overlay 0 */
+/* Colors used for hover effects and module backgrounds */
+@define-color overlay2  #9399b2;
+@define-color overlay1  #7f849c;
+@define-color overlay0  #6c7086;
 
-/* --- Surfaces --- */
-@define-color surface2  #585b70;        /* Surface 2 */
-@define-color surface1  #45475a;        /* Surface 1 */
-@define-color surface0  #313244;        /* Surface 0 */
+/* Intermediate surface layers */
+@define-color surface2  #585b70;
+@define-color surface1  #45475a;
+@define-color surface0  #313244;
 
-/* --- Core Base --- */
-@define-color base      #1e1e2e;        /* Base Background */
-@define-color mantle    #181825;        /* Mantle (Sidebar) */
-@define-color crust     #11111b;        /* Crust (Darkest) */
+/* ┌─── 5. Core Base Layers ────────────────────────────────────────────────────┐ */
+
+/* Main background layers for the bar and popups */
+@define-color base      #1e1e2e;
+@define-color mantle    #181825;
+@define-color crust     #11111b;
