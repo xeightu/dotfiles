@@ -1,26 +1,36 @@
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                        Mise Configuration (Global)                         │
-# └────────────────────────────────────────────────────────────────────────────┘
-
 [tools]
-node = "lts"         # Long Term Support (стабильная, сейчас v22/v24)
-# go = "latest"      # Можно раскомментировать, если понадобится
-# rust = "latest"    # Mise отлично работает и с Rust
+
+# ┌─── 1. Core Toolchains ─────────────────────────────────────────────────────┐
+
+# Use LTS to ensure maximum stability for production builds
+node = "lts"
+
+# [NOTE] Uncomment to enable global tracking for other runtimes
+# go   = "latest"
+# rust = "latest"
+
 
 [settings]
-# [INFO] Включаем экспериментальные фичи (нужно для замены direnv и таск-раннера)
+
+# ┌─── 2. Engine & Behavior ───────────────────────────────────────────────────┐
+
+# [WARN] Experimental features enabled for integrated Task Runner and Env Vars
 experimental = true
 
-# [COMPATIBILITY] Читать конфиги других менеджеров (.nvmrc, .python-version, .tool-versions)
-# Это позволяет работать с проектами, созданными пользователями asdf/nvm/pyenv.
-legacy_version_file = true
-
-# [BEHAVIOR] Не спрашивать подтверждение при установке новых версий (mise install)
+# Bypass confirmation prompts during tool installations
 yes = true
 
-# [PERFORMANCE] Количество потоков для компиляции (если mise собирает python из исходников)
+# Number of concurrent compilation threads for source builds
 jobs = 4
 
-# [PYTHON] Устанавливать эти пакеты автоматически для каждой новой версии Python
-# Полезно, чтобы pip всегда был свежим.
+
+# ┌─── 3. Compatibility & Interop ─────────────────────────────────────────────┐
+
+# [NOTE] Enable parsing of legacy config files (.nvmrc, .tool-versions)
+legacy_version_file = true
+
+
+# ┌─── 4. Language Specifics ──────────────────────────────────────────────────┐
+
+# [NOTE] Global packages to be installed with every new Python version
 # python_default_packages_file = "~/.config/mise/default-python-packages"
