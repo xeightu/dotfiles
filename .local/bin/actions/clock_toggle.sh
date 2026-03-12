@@ -1,17 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-STATE_FILE="/tmp/waybar_clock_state"
+# ┌─── 1. Configuration ───────────────────────────────────────────────────────┐
 
-# Читаем текущее состояние
-CURRENT_STATE=$(cat "$STATE_FILE")
+_state_file="/tmp/waybar_clock_state"
 
-# Переключаем состояние
-if [ "$CURRENT_STATE" = "time" ]; then
-  echo "date" >"$STATE_FILE"
+# ┌─── 2. State Toggle & Signal ───────────────────────────────────────────────┐
+
+# [NOTE] Read current state with a fallback to 'time' if the file is missing
+_current_state=$(cat "$_state_file" 2>/dev/null) || _current_state="time"
+
+# Toggle display mode
+if [[ "$_current_state" == "time" ]]; then
+  echo "date" >"$_state_file"
 else
-  echo "time" >"$STATE_FILE"
+  echo "time" >"$_state_file"
 fi
 
-# Отправляем сигнал Waybar для обновления кастомных модулей
-# (сигнал 10 - стандартный для пользовательских обновлений)
+# [NOTE] RTMIN+10 is the standard signal for triggering custom Waybar module updates
 pkill -RTMIN+10 waybar
