@@ -1,35 +1,36 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ┌──────────────────────────────────────────────────┐
-# │            Smart Split Orientation Toggle        │
-# └──────────────────────────────────────────────────┘
-# [INFO] This script intelligently toggles the split orientation
-# [INFO] based on the current Hyprland layout.
+# ┌─── 1. Environment & State ─────────────────────────────────────────────────┐
 
-# --- Get Current Layout ---
-layout=$(hyprctl -j getoption general:layout | jq -r '.value')
+# [NOTE] Check dependencies for window geometry parsing
+if ! command -v jq >/dev/null 2>&1; then
+  notify-send "System" "Error: jq is required for split toggling" -u critical
+  exit 1
+fi
 
-# --- Main Logic ---
-if [ "$layout" = "master" ]; then
-  # [INFO] For master layout, change the stack orientation.
+_current_layout=$(hyprctl -j getoption general:layout | jq -r '.value')
+
+# ┌─── 2. Layout Branching ────────────────────────────────────────────────────┐
+
+if [[ "$_current_layout" == "master" ]]; then
+  # --- Master Layout Action ---
   hyprctl dispatch layoutmsg orientationnext
-  notify-send "Master Layout" "Stack orientation changed" -i "view-dual-symbolic" -t 1000
+  notify-send "Layout" "Master: Stack orientation rotated" -i "view-dual-symbolic" -t 1000
+
 else
-  # [INFO] For dwindle layout, toggle the container split.
+  # --- Dwindle Layout Action ---
   hyprctl dispatch layoutmsg togglesplit
 
-  # [INFO] Check the split state AFTER toggling to show the correct notification.
-  active_window_json=$(hyprctl -j activewindow)
-
-  # [INFO] A vertical split is assumed if the active window's width
-  # [INFO] is nearly the full width of the monitor.
-  is_vertical_split=$(echo "$active_window_json" | jq -r '
+  # [NOTE] Split state detection logic:
+  # Compares active window width against monitor width to determine orientation
+  _active_win=$(hyprctl -j activewindow)
+  _is_vertical=$(echo "$_active_win" | jq -r '
         .at[0] == 0 and .size[0] >= (.monitor | tonumber | (.x + .width - 10))
     ')
 
-  if [ "$is_vertical_split" = "true" ]; then
-    notify-send "Split Changed" "Orientation: Vertical" -i "object-flip-vertical-symbolic" -t 1000
+  if [[ "$_is_vertical" == "true" ]]; then
+    notify-send "Layout" "Dwindle: Vertical Split" -i "object-flip-vertical-symbolic" -t 1000
   else
-    notify-send "Split Changed" "Orientation: Horizontal" -i "object-flip-horizontal-symbolic" -t 1000
+    notify-send "Layout" "Dwindle: Horizontal Split" -i "object-flip-horizontal-symbolic" -t 1000
   fi
 fi
