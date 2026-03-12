@@ -1,70 +1,74 @@
-; ┌─── 1. General ─────────────────────────────────────────────────────────────┐
-
-
 [general]
-# [CFG] Automatic scaling to prevent visual clipping or overflow
+
+; ┌─── 1. Layout & Rhythm ─────────────────────────────────────────────────────┐
+
+; Automatic scaling to terminal width (0 = auto)
 bars            = 0
 bar_width       = 2
 bar_spacing     = 1
 
-# [OPT] Balance between UI smoothness and CPU overhead
+; Optimal smoothness vs CPU trade-off
 framerate       = 60
-# [OPT] Power management: standby mode after 5 seconds of silence
+
+; Standby mode after 5s of silence to reduce background load
 sleep_timer     = 5
 
 
-; ┌─── 2. Input/Output ────────────────────────────────────────────────────────┐
-
-
 [input]
-# [CFG] Use Pipewire as the primary stable backend for modern distributions
+
+; ┌─── 2. Audio Processing ────────────────────────────────────────────────────┐
+
+; Low-latency modern audio routing via Pipewire
 method          = "pipewire"
 source          = "auto"
 
+
 [output]
-# [CFG] Standard terminal-based rendering via ncurses
+
+; Standard terminal-based rendering via ncurses
 method          = "ncurses"
 
-# [CFG] Visual feedback to confirm the daemon is alive during silence
+; Visual indicator to confirm daemon is active during silence
 show_idle_bar_heads = 1
 
 
-; ┌─── 3. Color Palette (Catppuccin Mocha) ────────────────────────────────────┐
-
-
 [color]
-# [CFG] Color scheme: Soft gradient using Catppuccin palette
+
+; ┌─── 3. Mocha Color Palette ─────────────────────────────────────────────────┐
+
+; Soft multi-tone gradient following the Mocha spectrum
 gradient        = 1
 gradient_count  = 8
 
-gradient_color_1 = "#89b4fa"
-gradient_color_2 = "#74c7ec"
-gradient_color_3 = "#94e2d5"
-gradient_color_4 = "#a6e3a1"
-gradient_color_5 = "#f9e2af"
-gradient_color_6 = "#fab387"
-gradient_color_7 = "#eba0ac"
-gradient_color_8 = "#f38ba8"
-
-
-; ┌─── 4. Signal Smoothing ────────────────────────────────────────────────────┐
+; Gradient mapping (Cool to Warm)
+gradient_color_1 = "#89b4fa" ; Blue
+gradient_color_2 = "#74c7ec" ; Sapphire
+gradient_color_3 = "#94e2d5" ; Teal
+gradient_color_4 = "#a6e3a1" ; Green
+gradient_color_5 = "#f9e2af" ; Yellow
+gradient_color_6 = "#fab387" ; Peach
+gradient_color_7 = "#eba0ac" ; Maroon
+gradient_color_8 = "#f38ba8" ; Red
 
 
 [smoothing]
-# [CFG] Enable Monstercat style for more aggressive "bouncy" visuals
+
+; ┌─── 4. Visual Dynamics ─────────────────────────────────────────────────────┐
+
+; Enable aggressive "bouncy" Monstercat-style visualization
 monstercat      = 1
 waves           = 0
 
-# [FIX] Filter hardware floor noise to prevent flickering on empty bars
+; [FIX] Filter hardware floor noise to prevent micro-flickering on empty bars
 noise_reduction = 77
 
 
-; ┌─── 5. Equalizer ───────────────────────────────────────────────────────────┐
-
-
 [eq]
-# [TODO] Increase lower bands (1-2) if bass visualization feels weak
-# [CFG] Default frequency balance
+
+; ┌─── 5. Equalizer Tuning ────────────────────────────────────────────────────┐
+
+; Increase lower bands (1-2) if bass visualization feels under-represented
+; Default linear frequency balance
 ; 1 = 1.0
 ; 2 = 1.0
 ; 3 = 1.0
