@@ -1,97 +1,73 @@
-# ┌─── 1. Core Configuration ──────────────────────────────────────────────────┐
+# ┌─── 1. Data Storage & Synchronization ──────────────────────────────────────┐
 
-# [CFG] Storage paths
-# Explicitly defined to prevent drift across different OS environments
-db_path          = "~/.local/share/atuin/history.db"
-key_path         = "~/.local/share/atuin/key"
-session_path     = "~/.local/share/atuin/session"
+# Explicit paths to ensure portability across different environments
+db_path      = "~/.local/share/atuin/history.db"
+key_path     = "~/.local/share/atuin/key"
+session_path = "~/.local/share/atuin/session"
 
-# [CFG] Locale & Time
-dialect          = "us"
-timezone         = "local"
+dialect  = "us"
+timezone = "local"
 
-# [OPT] Sync Frequency
-# Set to 5m for near-realtime consistency across machines.
-# Risk: Slight background network overhead on metered connections.
-auto_sync        = true
-update_check     = true
-sync_frequency   = "5m"
+auto_sync    = true
+update_check = true
+sync_frequency = "5m" # Balance between battery and parity
 
 
-# ┌─── 2. UI & Aesthetics ─────────────────────────────────────────────────────┐
+# ┌─── 2. Interface Topology ──────────────────────────────────────────────────┐
 
-# [CFG] Interface Mode
-# "auto" adapts, but usually defaults to full TUI in standard shells.
-style            = "auto"
+style = "auto"
 
-# [FLOW] Viewport Height
-# Set to 0 to force full-screen overlay mode.
-# Risk: Completely obscures the current terminal context during search.
-inline_height    = 0
+# [NOTE] 0 = full screen. Forces total context takeover for better focus
+inline_height = 0
 
-# [CFG] Visual Toggles
-# Preview is essential for long commands, tabs disabled for minimalism.
-show_preview     = true
-show_help        = true
-show_tabs        = false
+show_preview = true
+show_help    = true
+show_tabs    = false
 
 
-# ┌─── 3. Search Behavior ─────────────────────────────────────────────────────┐
+# ┌─── 3. Search & Workflow Logic ─────────────────────────────────────────────┐
 
-# [OPT] Search Algorithm
-# Fuzzy allows approximate matching (e.g., 'dcr' finds 'docker-compose run').
-search_mode      = "fuzzy"
+# [NOTE] Fuzzy algorithm allows approximate matching (e.g., 'dcr' -> 'docker run')
+search_mode = "fuzzy"
 
-# [FLOW] Filter Scope
-# 'global' searches all history regardless of directory or session.
-filter_mode      = "global"
+# Search history across all registered machines and sessions
+filter_mode = "global"
 
-# [FLOW] Exit Strategy
-# 'return-query' leaves the selected command in the prompt without executing.
-# Useful for editing arguments before running.
-exit_mode        = "return-query"
+# [NOTE] 'return-query' puts command in buffer for editing instead of execution
+exit_mode = "return-query"
 
-# [OPT] Context Awareness
-# Enable workspace filtering to prioritize commands run inside the current git repo.
-workspaces       = true
+# Prioritize commands from the current git repository
+workspaces = true
 
 
-# ┌─── 4. Interaction Logic ───────────────────────────────────────────────────┐
+# ┌─── 4. Interaction & Safety ────────────────────────────────────────────────┐
 
-# [FLOW] Execution Trigger
-# If true: ENTER executes immediately.
-# If false: ENTER puts command in prompt (safer).
-# Risk: High risk of accidental execution of destructive commands (rm/dd).
-enter_accept     = true
+# [WARN] Immediate execution risk. High risk of accidental 'rm' or 'dd' if true
+enter_accept = true
 
-# [CFG] Navigation Inputs
-word_jump_mode   = "emacs"
+word_jump_mode       = "emacs"
 scroll_context_lines = 2
 
 
-# ┌─── 5. Statistics & exclusions ─────────────────────────────────────────────┐
+# ┌─── 5. Statistics & Exclusions ─────────────────────────────────────────────┐
 
 [stats]
-# [HACK] Prefix stripping
-# Remove privilege escalators to normalize stats (sudo apt == apt).
-common_prefix    = ["sudo", "doas"]
+# [NOTE] Strip 'sudo/doas' to group identical commands in analytical data
+common_prefix = ["sudo", "doas"]
 
-# [CFG] Noise filtering
-# Exclude trivial navigation commands from analytical data.
+# Filter trivial shell internal commands from history analysis
 ignored_commands = ["cd", "ls", "clear", "exit"]
 
 
 # ┌─── 6. Preview Strategy ────────────────────────────────────────────────────┐
 
 [preview]
-# [OPT] Calculation Strategy
-# 'auto' calculates height based on command length vs terminal height.
-strategy         = "auto"
+# Adaptive height calculation based on command length vs terminal area
+strategy = "auto"
 
 
 # ┌─── 7. Keybindings ─────────────────────────────────────────────────────────┐
 
 [keys]
-# [FLOW] Scroll Boundaries
-# false = strictly keeps focus inside Atuin until explicit exit key is pressed.
-scroll_exits     = false
+# [NOTE] False keeps focus inside Atuin to prevent accidental shell exits
+scroll_exits = false
