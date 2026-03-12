@@ -1,29 +1,38 @@
-#!/bin/bash
-# [INFO] This script provides a smart battery status for hyprlock.
+#!/usr/bin/env bash
 
-# [FIX] Automatically find the battery path instead of hardcoding it.
-# This makes the script portable across different machines.
-BATTERY_PATH=$(upower -e | grep 'battery')
+# ┌─── 1. Data Acquisition ──────────────────────────────────────────────────┐
 
-# [INFO] If no battery is found, exit gracefully.
-if [ -z "$BATTERY_PATH" ]; then
+# [NOTE] Automatically detect primary battery path for hardware portability
+_bat_path=$(upower -e | grep 'battery' | head -n 1)
+
+if [[ -z "$_bat_path" ]]; then
   echo "󰂃 No Battery"
   exit 0
 fi
 
-# [INFO] Get battery status and percentage using a reliable awk command.
-STATUS=$(upower -i $BATTERY_PATH | awk '/state:/ {print $2}')
-PERCENTAGE=$(upower -i $BATTERY_PATH | awk '/percentage:/ {sub(/%/, ""); print $2}')
+# [NOTE] Capture raw data once to minimize redundant system calls
+_bat_info=$(upower -i "$_bat_path")
+_status=$(echo "$_bat_info" | awk '/state:/ {print $2}')
+_pct=$(echo "$_bat_info" | awk '/percentage:/ {print $2}' | tr -d '%')
 
-if [ "$STATUS" = "charging" ]; then
-  ICON="" # Charging icon
-elif [ "$PERCENTAGE" -gt 80 ]; then
-  ICON="󰁹" # Full
-elif [ "$PERCENTAGE" -gt 30 ]; then
-  ICON="󰁾" # Medium
+# ┌─── 2. Icon Logic ────────────────────────────────────────────────────────┐
+
+if [[ "$_status" == "charging" || "$_status" == "fully-charged" ]]; then
+  _icon="󱐋"
+elif ((_pct > 90)); then
+  _icon="󰁹"
+elif ((_pct > 70)); then
+  _icon="󰂀"
+elif ((_pct > 40)); then
+  _icon="󰁾"
+elif ((_pct > 15)); then
+  _icon="󰁺"
 else
-  ICON="󰁺" # Low
+  # [NOTE] Warning icon for critical levels
+  _icon="󰂃"
 fi
 
-# [OUTPUT] Print plain text without any color tags.
-echo "${ICON}  ${PERCENTAGE}%"
+# ┌─── 3. Final Output ──────────────────────────────────────────────────────┐
+
+# Plain text output formatted for hyprlock labels
+echo "${_icon}  ${_pct}%"
