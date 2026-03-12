@@ -1,118 +1,109 @@
 #!/usr/bin/env zsh
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │                         HOURLY BRIGHTNESS SCHEDULE                         │
-# └────────────────────────────────────────────────────────────────────────────┘
 
-# --- Configuration ---
+# ┌─── 1. Environment & Safety Guards ────────────────────────────────────────┐
 
-THRESHOLD=10                            # Hysteresis threshold (percent)
-FADE_SPEED=0.05                         # Smoother transition (seconds per step)
-PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness-manager.pid"
-
-# [CONFIG] Hourly brightness map (Hour=Percentage).
-# [INFO] Tailored for early winter sunsets in Estonia.
-typeset -A SCHEDULE
-SCHEDULE=(
-    [06]=20 [07]=40 [08]=70             # Morning rise
-    [09]=90 [10]=90 [11]=90             # Work hours (start)
-    [12]=90 [13]=90 [14]=90             # Work hours (mid)
-    [15]=90 [16]=80 [17]=70             # Early sunset phase
-    [18]=60 [19]=50 [20]=45             # Evening relaxation
-    [21]=40 [22]=30 [23]=20             # Pre-sleep wind down
-    [00]=15 [01]=15 [02]=15             # Deep night
-    [03]=10 [04]=10 [05]=10             # Deep night
-)
-
-LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness_disabled"
-
-# --- Helper Functions ---
-
-# Check if brightnessctl is installed
 if ! command -v brightnessctl >/dev/null 2>&1; then
-    echo "Error: brightnessctl is not installed." >&2
+    print -P "%F{203}[ERR] brightnessctl missing. Termination.%f" >&2
     exit 1
 fi
 
-fade_brightness() {
-    local target_pct=$1
-    local speed=$2
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness-manager.pid"
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness_disabled"
 
-    local max=$(brightnessctl m)
-    local target_raw=$(( target_pct * max / 100 ))
-    local current_raw=$(brightnessctl g)
-    
-    if (( current_raw == target_raw )); then return; fi
-
-    # Determine step size in raw values for better precision
-    local total_diff=$(( target_raw - current_raw ))
-    local step_raw=$(( total_diff > 0 ? (max / 100) : -(max / 100) ))
-    if (( step_raw == 0 )); then step_raw=$(( total_diff > 0 ? 1 : -1 )); fi
-
-    while (( (step_raw > 0 && current_raw < target_raw) || (step_raw < 0 && current_raw > target_raw) )); do
-        (( current_raw += step_raw ))
-        
-        # Clamp value
-        if (( step_raw > 0 && current_raw > target_raw )) || (( step_raw < 0 && current_raw < target_raw )); then
-            current_raw=$target_raw
-        fi
-
-        brightnessctl set "${current_raw}" &>/dev/null
-        sleep $speed
-
-        # Detect user interruption using raw values (tolerance: 5% of max)
-        local check_raw=$(brightnessctl g)
-        local diff=$(( check_raw > current_raw ? check_raw - current_raw : current_raw - check_raw ))
-        if (( diff > (max * 0.05) )); then
-            echo "User interrupted fade."
-            return 1
-        fi
-    done
-}
-
-# --- Lock & PID Management ---
-
-# Ensure only one instance is running
 if [[ -f "$PID_FILE" ]]; then
-    local old_pid=$(cat "$PID_FILE")
-    if kill -0 "$old_pid" 2>/dev/null; then
+    _old_pid=$(cat "$PID_FILE")
+    if kill -0 "$_old_pid" 2>/dev/null; then
         if [[ "$1" == "--force" ]]; then
-            kill "$old_pid"
+            kill "$_old_pid"
         else
             exit 0
         fi
     fi
 fi
+
 echo $$ > "$PID_FILE"
 trap "rm -f $PID_FILE" EXIT
 
-# --- Core Logic ---
+[[ -f "$LOCK_FILE" ]] && exit 0
 
-if [[ -f "$LOCK_FILE" ]]; then exit 0; fi
 
-integer HOUR_NOW=$(date +%H)
-KEY_NOW=$(printf "%02d" $HOUR_NOW)
-integer TARGET_NOW=${SCHEDULE[$KEY_NOW]:-50}
+# ┌─── 2. Configuration & Schedule ───────────────────────────────────────────┐
 
-integer MAX=$(brightnessctl m 2>/dev/null) || exit 1
-integer CURRENT_RAW=$(brightnessctl g 2>/dev/null)
-integer CURRENT_PCT=$((CURRENT_RAW * 100 / MAX))
+THRESHOLD=10
+FADE_SPEED=0.05
+USER_TOLERANCE=0.05
 
-# [INFO] Force Mode Check
+typeset -A SCHEDULE
+SCHEDULE=(
+    [06]=20 [07]=40 [08]=70 [09]=90 [10]=90 [11]=90
+    [12]=90 [13]=90 [14]=90 [15]=90 [16]=80 [17]=70
+    [18]=60 [19]=50 [20]=45 [21]=40 [22]=35 [23]=30
+    [00]=20 [01]=20 [02]=20 [03]=20 [04]=20 [05]=20
+)
+
+
+# ┌─── 3. Hardware Mutation Logic ────────────────────────────────────────────┐
+
+fade_brightness() {
+    local _target_pct=$1
+    local _speed=$2
+    
+    # [NOTE] Using Soft Sky color (153) for process info
+    print -P "%F{153}󰃠 Adjusting: ${current_pct}%% ➜ ${_target_pct}%%%f"
+
+    local _max_raw=$(brightnessctl m)
+    local _target_raw=$(( _target_pct * _max_raw / 100 ))
+    local _current_raw=$(brightnessctl g)
+    
+    [[ $_current_raw -eq $_target_raw ]] && return
+
+    local _step_raw=$(( (_target_raw - _current_raw) > 0 ? (_max_raw / 100) : -(_max_raw / 100) ))
+    [[ $_step_raw -eq 0 ]] && _step_raw=$(( (_target_raw - _current_raw) > 0 ? 1 : -1 ))
+
+    while (( (_step_raw > 0 && _current_raw < _target_raw) || (_step_raw < 0 && _current_raw > _target_raw) )); do
+        (( _current_raw += _step_raw ))
+        
+        if (( (_step_raw > 0 && _current_raw > _target_raw) || (_step_raw < 0 && _current_raw < _target_raw) )); then
+            _current_raw=$_target_raw
+        fi
+
+        brightnessctl set "${_current_raw}" &>/dev/null
+        sleep "$_speed"
+
+        local _check_raw=$(brightnessctl g)
+        local _drift=$(( _check_raw > _current_raw ? _check_raw - _current_raw : _current_raw - _check_raw ))
+        if (( _drift > (_max_raw * USER_TOLERANCE) )); then
+            return 1 
+        fi
+    done
+}
+
+
+# ┌─── 4. Decision Logic ─────────────────────────────────────────────────────┐
+
+integer hour_now=$(date +%H)
+key_now=$(printf "%02d" $hour_now)
+integer target_now=${SCHEDULE[$key_now]:-50}
+
+integer max_raw=$(brightnessctl m 2>/dev/null) || exit 1
+integer current_raw=$(brightnessctl g 2>/dev/null)
+integer current_pct=$((current_raw * 100 / max_raw))
+
 if [[ "$1" == "--force" ]]; then
-    echo "Force mode: $KEY_NOW -> ${TARGET_NOW}%"
-    fade_brightness $TARGET_NOW $FADE_SPEED
+    # [NOTE] Mauve (183) for forced actions
+    print -P "%F{183}󰁯 Force Sync:%f [Time: ${key_now}:00] Target: ${target_now}%%"
+    fade_brightness "$target_now" "$FADE_SPEED"
     exit 0
 fi
 
-# [INFO] Calculate deviation
-integer diff_now=$(( CURRENT_PCT > TARGET_NOW ? CURRENT_PCT - TARGET_NOW : TARGET_NOW - CURRENT_PCT ))
+integer diff_now=$(( current_pct > target_now ? current_pct - target_now : target_now - current_pct ))
 
 if (( diff_now <= 2 )); then
     exit 0
 elif (( diff_now <= THRESHOLD )); then
-    echo "Adjusting brightness: ${CURRENT_PCT}% -> ${TARGET_NOW}%"
-    fade_brightness $TARGET_NOW $FADE_SPEED
+    fade_brightness "$target_now" "$FADE_SPEED"
 else
-    # User override - do nothing until the next significant schedule change or --force
+    # [NOTE] Muted Gray (243) for passive info
+    print -P "%F{243}󰈈 User override detected (${current_pct}%%). Skipping sync.%f"
     exit 0
 fi
