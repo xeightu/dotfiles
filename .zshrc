@@ -1,41 +1,49 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
+# ┌─── 1. Initialization ──────────────────────────────────────────────────────┐
+
+# [NOTE] Uncomment to profile shell startup performance
+# zmodload zsh/zprof
+
+# [NOTE] Enable instant prompt to reduce perceived startup time
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+    source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 
-# ┌─── ZSH Main Entry Point ───────────────────────────────────────────────────┐
-# │  [INFO] The Hub: Orchestrates the loading of the configuration system.
-# └────────────────────────────────────────────────────────────────────────────┘
+# ┌─── 2. Global Environment ──────────────────────────────────────────────────┐
 
-# [CFG] Configuration Root
-export ZSH_CONFIG_DIR="$HOME/.config/zsh"
+export ZSH_CONFIG_DIR="${HOME}/.config/zsh"
+export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+
+[[ -d "$ZSH_CACHE_DIR" ]] || mkdir -p "$ZSH_CACHE_DIR"
+
+# [NOTE] Redirect zcompdump to cache to keep $HOME clean
+export ZSH_COMPDUMP="${ZSH_CACHE_DIR}/zcompdump-${HOST}-${ZSH_VERSION}"
+
+# [NOTE] Skip security checks to significantly speed up shell startup
+zstyle ":omz:lib:completion" compinit-options "-C"
 
 
-# ┌── 1. Core Loader (10-70) ──────────────────────────────────────────────────┐
+# ┌─── 3. Module Loader ───────────────────────────────────────────────────────┐
 
-# [FLOW] Source numbered config files in sequence (10_env -> 70_init)
-for config_file in "$ZSH_CONFIG_DIR/"(10|20|30|40|50|60|70)_*.zsh(N); do
-  source "$config_file"
+# Load core configurations (10_*, 20_*, etc.)
+for _f in "$ZSH_CONFIG_DIR"/(10|20|30|40|50|60|70)_*.zsh(N); do
+    source "$_f"
 done
 
-
-# ┌── 2. Apps Loader ──────────────────────────────────────────────────────────┐
-
-# [FLOW] Load standalone applications from 'apps/' directory (e.g., vid2txt)
+# Load application-specific configs
 if [[ -d "$ZSH_CONFIG_DIR/apps" ]]; then
-    for app in "$ZSH_CONFIG_DIR/apps"/*.zsh(N); do
-        source "$app"
+    for _a in "$ZSH_CONFIG_DIR/apps"/*.zsh(N); do
+        source "$_a"
     done
 fi
 
 
-# ┌── 3. Finalization ─────────────────────────────────────────────────────────┐
+# ┌─── 4. Post-Load & Finalization ────────────────────────────────────────────┐
 
-# [OPT] Clean up loader variables
-unset config_file app
+[[ -f "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 
-# [CFG] Load Powerlevel10k theme
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# Print profiling results if zprof was loaded
+(( $+builtins[zprof] )) && zprof | head -n 20
+
+# [NOTE] Prevent loop variables from leaking into the global scope
+unset _f _a
