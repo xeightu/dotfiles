@@ -20,7 +20,12 @@
 .local/*
 !/.local/bin/
 !/.local/bin/**
+
+# Apps and symlinks
 .local/bin/spotdl
+.local/bin/whisper
+.local/bin/obsidian
+.local/bin/copyparty-sfx.py
 
 
 # ┌─── 2. Desktop Environment ─────────────────────────────────────────────────┐
@@ -31,7 +36,7 @@
 # Hyprland Ecosystem
 !/.config/hypr/
 !/.config/waybar/
-!/.config/wofi/
+!/.config/rofi/
 !/.config/dunst/
 !/.config/mako/
 !/.config/libinput-gestures.conf
@@ -75,6 +80,8 @@
 
 # Pyre Engine
 !/.config/pyre/
+!/.config/pyre/lib/
+!/.config/pyre/layouts/
 .config/pyre/state
 .config/pyre/main_menu_last_choice
 
@@ -82,18 +89,7 @@
 !/.config/cava/
 .config/cava/shaders/
 !/.config/imv/
-!/.config/glow/
-!/.config/sampler/
-!/.config/pupgui/
-!/.config/dooit/
-
-# Clipse (Clipboard)
-!/.config/clipse/
-.config/clipse/*
-!/.config/clipse/*.json
-!/.config/clipse/*.png
-# [WARN] Sensitive clipboard data
-.config/clipse/clipboard_history.json
+/.config/pupgui/
 
 # Spicetify (Spotify)
 !/.config/spicetify/
