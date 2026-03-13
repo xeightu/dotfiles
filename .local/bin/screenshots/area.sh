@@ -1,14 +1,17 @@
-#!/bin/bash
-# ┌────────────────────────────────────────────┐
-# │             SCREENSHOT - AREA              │
-# └────────────────────────────────────────────┘
-# [INFO] Captures a screen area and passes the result to the action menu.
+#!/usr/bin/env bash
 
-# --- Main Logic ---
-# [INFO] 1. Call the capture engine to get a temporary file path.
-TMP_FILE=$(~/.local/bin/screenshots/_capture.sh)
+# ┌─── 1. Path Configuration ──────────────────────────────────────────────────┐
 
-# [INFO] 2. If a file was created, pass it to the action menu.
-if [ -n "$TMP_FILE" ]; then
-  ~/.local/bin/screenshots/action_menu.sh "$TMP_FILE"
-fi
+_menu_exe="$HOME/.local/bin/screenshots/action_menu.sh"
+_temp_dir="/tmp"
+
+# ┌─── 2. Execution (Region Capture) ──────────────────────────────────────────┐
+
+# [NOTE] --freeze: Locks the screen state to prevent UI changes during selection
+# [NOTE] --silent: Bypasses default hyprshot notifications to avoid duplication
+hyprshot -m region \
+  --freeze \
+  --silent \
+  -o "$_temp_dir" \
+  -f "area_$(date +%s).png" \
+  -- "$_menu_exe"
