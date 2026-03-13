@@ -1,70 +1,56 @@
 #!/usr/bin/env zsh
-# ┌─── Pyre Framework - Entry Point ───────────────────────────────────────────┐
-# │  [INFO] Central controller for system theming and automation.              │
-# └────────────────────────────────────────────────────────────────────────────┘
 
-# ┌─── Core Initialization ────────────────────────────────────────────────────┐
+# ┌─── 1. Initialization & Imports ────────────────────────────────────────────┐
 
-# --- Library Loading ---
-# [CRITICAL] Source the logic engine.
-source "$HOME/.config/pyre/functions.sh"
+LIB_DIR="$HOME/.config/pyre/lib"
 
-# --- Pre-flight Checks ---
-# [INFO] Ensure all required binaries are present.
+# [WARN] Critical modules: environment will fail to load if files are missing
+source "$LIB_DIR/core.zsh"    || exit 1
+source "$LIB_DIR/theme.zsh"   || exit 1
+source "$LIB_DIR/layouts.zsh" || exit 1
+source "$LIB_DIR/ui.zsh"      || exit 1
+
+
+# ┌─── 2. System Verification ─────────────────────────────────────────────────┐
+
+# Ensure core binaries (wofi, swww, jq, etc) are available before proceeding
 check_dependencies
 
-# ┌─── Command Router ─────────────────────────────────────────────────────────┐
 
-# [INFO] Dispatch commands based on arguments.
+# ┌─── 3. Command Routing ─────────────────────────────────────────────────────┐
+
 case "$1" in
-
-# --- Theme Management ---
-theme)
-  case "$2" in
-  next) switch_theme_next ;; # [LOGIC] Cycle to next theme
-  set) apply_theme "$3" ;;   # [LOGIC] Apply specific theme
-  *)
-    if [[ -n "$2" ]]; then
-      apply_theme "$2"
-    else
-      show_theme_menu
-    fi
-    ;;
-  esac
-  ;;
-
-# --- Wallpaper Control ---
-    wallpaper)
+    # Theme Management
+    theme)
         case "$2" in
-            next)   change_wallpaper_random ;;
-            select) show_wallpaper_menu ;;
-            auto)
-                while true; do
-                    change_wallpaper_random
-                    sleep 30m
-                done
-                ;;
-            *)      change_wallpaper_random ;;
+            set) apply_theme "$3" ;;
+            *)   [[ -n "$2" ]] && apply_theme "$2" || show_theme_menu ;;
         esac
         ;;
 
-# --- UI & Session ---
-layout)
-  show_layout_menu
-  ;;
+    # Desktop Backgrounds
+    wallpaper)
+        case "$2" in
+            select) show_wallpaper_menu ;;
+            # [NOTE] Randomizes within the context of the currently active theme
+            *)      _set_wallpaper_random ;;
+        esac
+        ;;
 
-session)
-  show_session_menu
-  ;;
+    # Workspace & Window Layouts
+    layout)
+        show_layout_menu
+        ;;
 
-reload)
-  reload_services
-  notify-send "Pyre" "System configurations reloaded." -i "system-reboot"
-  ;;
+    # System Maintenance
+    reload)
+        reload_services
+        _notify "Pyre Engine" "Configurations reloaded." "system-reboot"
+        ;;
 
-# --- Default Action ---
-*)
-  show_main_menu
-  ;;
-
+    # Interactive Dashboard
+    # [NOTE] Default entry point when no arguments are provided
+    *)
+        show_main_menu
+        ;;
 esac
