@@ -1,0 +1,52 @@
+# ┌─── 1. Geometry & Positioning ──────────────────────────────────────────────┐
+
+anchor=top-right
+width=350
+margin=15
+outer-margin=0
+padding=12
+
+# Render above fullscreen applications
+layer=overlay
+
+border-size=2
+border-radius=18
+
+
+# ┌─── 2. Appearance & Default Style ─────────────────────────────────────────┐
+
+font=JetBrains\ Mono\ Nerd\ Font\ 10
+max-icon-size=48
+icon-location=left
+
+# Default Mocha Colors (Base / Text / Lavender)
+background-color=#1E1E2E
+text-color=#CDD6F4
+border-color=#B4BEFE
+
+# Append newest notifications at the bottom
+sort=+time
+
+
+# ┌─── 3. Urgency Rules ───────────────────────────────────────────────────────┐
+
+[urgency=low]
+# [NOTE] Deemphasized subtext color and rapid dismissal (5s) to lower visual noise
+background-color=#1E1E2E
+text-color=#A6ADC8
+border-color=#585B70
+default-timeout=5000
+
+[urgency=normal]
+# Standard visibility window (10s) with primary Lavender accent
+background-color=#1E1E2E
+text-color=#CDD6F4
+border-color=#B4BEFE
+default-timeout=10000
+
+[urgency=critical]
+# [WARN] Infinite timeout requires explicit manual dismissal for critical events
+background-color=#1E1E2E
+text-color=#F38BA8
+border-color=#F38BA8
+default-timeout=0

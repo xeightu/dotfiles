@@ -1,0 +1,61 @@
+configuration {
+
+    /* ┌─── 1. Modes & Topography ──────────────────────────────────────────────┐ */
+
+    // Available modes: 'drun' (desktop), 'run' (binaries), 'window' (tasks)
+    modi:                       "drun,run,window";
+
+    // Enable side/bottom bar for rapid mode switching
+    sidebar-mode:               true;
+
+    // Search behavior parity with Wofi/Fzf
+    case-sensitive:             false;
+    cycle:                      true;
+    filter:                     "";
+
+
+    /* ┌─── 2. Interaction & Search ────────────────────────────────────────────┐ */
+
+    // Limit matching to name and generic type to reduce search noise
+    drun-match-fields:          "name,generic";
+
+    hover-select:               true;
+    scroll-method:              1;
+
+    // [FIX] Normalize matching to prevent visual artifacts in highlighting
+    normalize-match:            true;
+    show-match:                 true;
+
+
+    /* ┌─── 3. Visuals & Icons ─────────────────────────────────────────────────┐ */
+
+    show-icons:                 true;
+    icon-theme:                 "Papirus-Dark";
+
+    // Nerd-Font mode indicators
+    display-drun:               " ";
+    display-run:                " ";
+    display-window:             " ";
+    display-filebrowser:        " ";
+
+    // [NOTE] Minimalist formatting to prevent horizontal window overflow
+    drun-display-format:        "{name}";
+    window-format:              "{w} · {c}";
+
+
+    /* ┌─── 4. Environment ─────────────────────────────────────────────────────┐ */
+
+    font:                       "JetBrainsMono Nerd Font 12";
+
+    // [FIX] Explicit terminal assignment required for 'run' mode execution
+    terminal:                   "kitty";
+
+    // Prevent keyboard input leaks by stealing focus immediately
+    steal-focus:                true;
+}
+
+
+/* ┌─── 5. Theme Orchestration ─────────────────────────────────────────────────┐ */
+
+// [WARN] Rofi will crash on launch if style.rasi or its imports are missing
+@theme "style"

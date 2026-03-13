@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# ┌─── 1. Configuration ───────────────────────────────────────────────────────┐
+THUMB_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist_thumbs"
+MAX_ITEMS=15
+
+# ┌─── 2. Environment ─────────────────────────────────────────────────────────┐
+mkdir -p "$THUMB_DIR"
+
+# ┌─── 3. Core Logic ──────────────────────────────────────────────────────────┐
+# [FLOW] Use 'head' first to limit processing and keep Rofi responsive.
+cliphist list | head -n "$MAX_ITEMS" | while read -r line; do
+
+  # [OPT] Extract ID using Bash parameter expansion (everything before first Tab)
+  id="${line%%$'\t'*}"
+
+  # [FIX] Check for binary data string to trigger thumbnail logic
+  if [[ "$line" == *'[[ binary data'* ]] || [[ "$line" == *'binary data'* ]]; then
+    file="$THUMB_DIR/$id.png"
+
+    # [FLOW] Decode in background if thumbnail is missing
+    if [[ ! -s "$file" ]]; then
+      (cliphist decode "$id" >"$file") &
+    fi
+
+    # [FLOW] Output raw line (with Tab) + Rofi icon metadata
+    printf "%s\0icon\x1f%s\n" "$line" "$file"
+  else
+    # [FLOW] Text-based entry (preserves Tab for -display-columns 2)
+    printf "%s\n" "$line"
+  fi
+
+done
+
+# ┌─── 4. Background Maintenance ──────────────────────────────────────────────┐
+(find "$THUMB_DIR" -name "*.png" -type f -mtime +2 -delete 2>/dev/null) &

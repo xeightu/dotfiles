@@ -1,0 +1,60 @@
+* {
+    /* ┌─── 1. Core Surfaces ──────────────────────────────────────────────────┐ */
+
+    base:           #1e1e2eff;
+    mantle:         #181825ff;
+    crust:          #11111bff;
+
+
+    /* ┌─── 2. Accents ────────────────────────────────────────────────────────┐ */
+
+    /* [NOTE] Lavender is the primary accent for consistency across the desktop */
+    lavender:       #b4befeff;
+    
+    mauve:          #cba6f7ff;
+    blue:           #89b4faff;
+    sapphire:       #74c7ecff;
+    sky:            #89dcebff;
+    teal:           #94e2d5ff;
+    pink:           #f5c2e7ff;
+    flamingo:       #f2cdcdff;
+    rosewater:      #f5e0dcff;
+
+
+    /* ┌─── 3. Status Colors ──────────────────────────────────────────────────┐ */
+
+    /* [NOTE] Visual cues for critical states and notifications */
+    red:            #f38ba8ff;
+    maroon:         #eba0acff;
+    peach:          #fab387ff;
+    yellow:         #f9e2afff;
+    green:          #a6e3a1ff;
+
+
+    /* ┌─── 4. UI Elements & Typography ───────────────────────────────────────┐ */
+
+    text:           #cdd6f4ff;
+    subtext1:       #bac2deff;
+    subtext0:       #a6adc8ff;
+
+    /* Non-selected interactive surfaces */
+    surface2:       #585b70ff;
+    surface1:       #45475aff;
+    surface0:       #313244ff;
+
+    /* Dividers and inactive borders */
+    overlay2:       #9399b2ff;
+    overlay1:       #7f849cff;
+    overlay0:       #6c7086ff;
+
+
+    /* ┌─── 5. Functional Mapping ─────────────────────────────────────────────┐ */
+
+    /* [NOTE] Semantic mapping to Rofi internal theme engine */
+    background:     @base;
+    background-alt: @mantle;
+    foreground:     @text;
+    selected:       @lavender;
+    active:         @green;
+    urgent:         @red;
+}
