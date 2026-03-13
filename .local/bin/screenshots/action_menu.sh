@@ -1,57 +1,71 @@
-#!/bin/bash
-# ┌──────────────────────────────────────────────────┐
-# │            SCREENSHOT - ACTION MENU              │
-# └──────────────────────────────────────────────────┘
-# [INFO] This script receives a path to a temporary screenshot file
-# [INFO] and presents a Wofi menu to decide its fate.
+#!/usr/bin/env bash
 
-# --- Configuration ---
-# [CONFIG] The base directory for all saved screenshots.
-SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
+# ┌─── 1. Configuration & Initial Guards ──────────────────────────────────────┐
 
-# --- Initialization ---
-# [INFO] Automatically create a sorted directory for the current month (YYYY-MM).
-SORTED_DIR="$SCREENSHOT_DIR/$(date +'%Y-%m')"
-mkdir -p "$SORTED_DIR"
-
-# [INFO] Get the temporary file path from the first script argument.
-TMP_FILE="$1"
-
-# [FIX] If the file doesn't exist (e.g., capture was cancelled), exit.
-if [ ! -f "$TMP_FILE" ]; then
+# [FIX] Immediate exit if source image is missing or hyprshot was aborted
+if [[ -z "$1" || ! -f "$1" ]]; then
   exit 1
 fi
 
-# --- Main Logic ---
-# [INFO] Define menu options with Nerd Font icons.
-options=" Copy\n Edit\n Save\n Delete"
+readonly TMP_FILE="$1"
+SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
+_sorted_dir="$SCREENSHOT_DIR/$(date +'%Y-%m')"
 
-# [CONFIG] Wofi command with correct styling and size.
-wofi_command="wofi --show dmenu --prompt=Action --width 180 --height 160"
+# Menu Labels
+OPT_COPY="  Copy"
+OPT_SAVE_AS="  Save As"
+OPT_SAVE_QUICK="  Quick Save"
+OPT_EDIT="  Edit"
+OPT_DELETE="  Delete"
 
-# [INFO] Display the Wofi menu and capture the user's choice.
-CHOICE=$(echo -e "$options" | ${wofi_command})
+# UI Settings
+ROFI_CMD="rofi -dmenu -i -fixed-num-lines true -theme-str"
+# [NOTE] Focused UI geometry for post-capture action selector
+THEME_BASE="window {width: 240px;} listview {lines: 5;} entry {enabled: false;} element {children: [\"element-text\"];} element-text {horizontal-align: 0.0;}"
 
-case "$CHOICE" in
-" Copy")
+# ┌─── 2. Interactive Selection ───────────────────────────────────────────────┐
+
+mkdir -p "$_sorted_dir"
+
+_options="$OPT_COPY\n$OPT_SAVE_AS\n$OPT_SAVE_QUICK\n$OPT_EDIT\n$OPT_DELETE"
+_choice=$(echo -e "$_options" | $ROFI_CMD "$THEME_BASE" -p "Capture")
+
+# ┌─── 3. Action Handling ─────────────────────────────────────────────────────┐
+
+case "$_choice" in
+"$OPT_COPY")
   wl-copy --type image/png <"$TMP_FILE"
+  # [WARN] Delete volatile buffer file immediately after successful copy
   rm "$TMP_FILE"
-  notify-send "Screenshot Copied" "Temporary file deleted."
+  notify-send "Screenshot" "Copied to clipboard" -i "dialog-information" -t 2000
   ;;
-" Edit")
-  satty --filename "$TMP_FILE" --output-filename "$SORTED_DIR/$(date +'%Y-%m-%d_%H-%M-%S').png"
+
+"$OPT_EDIT")
+  # [NOTE] Pass execution to Satty for annotations and final saving
+  satty --filename "$TMP_FILE" --output-filename "$_sorted_dir/$(date +'%H-%M-%S').png"
   rm "$TMP_FILE"
   ;;
-" Save")
-  FILENAME="$(date +'%Y-%m-%d_%H-%M-%S').png"
-  mv "$TMP_FILE" "$SORTED_DIR/$FILENAME"
-  notify-send "Screenshot Saved" "Path: $SORTED_DIR/$FILENAME"
+
+"$OPT_SAVE_QUICK")
+  _target="$(date +'%Y-%m-%d_%H-%M-%S').png"
+  mv "$TMP_FILE" "$_sorted_dir/$_target"
+  notify-send "Screenshot" "Saved: $_target" -i "folder-screenshots" -t 2000
   ;;
-" Delete")
-  rm "$TMP_FILE"
-  notify-send "Screenshot Deleted"
+
+"$OPT_SAVE_AS")
+  # [NOTE] Spawn an input-only Rofi box for custom filename entry
+  _input=$(echo "" | $ROFI_CMD "window {width: 400px;} listview {lines: 0;}" -p "Filename")
+
+  # Sanitize input: replace unsafe filesystem characters with underscores
+  _safe_name="${_input//[^a-zA-Z0-9._-]/_}"
+  [[ -z "$_safe_name" ]] && _safe_name="capture_$(date +%s)"
+
+  mv "$TMP_FILE" "$_sorted_dir/${_safe_name}.png"
+  notify-send "Screenshot" "Saved: ${_safe_name}.png" -i "folder-screenshots" -t 2000
   ;;
-*)
-  rm "$TMP_FILE"
+
+"$OPT_DELETE" | *)
+  # [NOTE] Catch-all handles both explicit Delete and ESC/Abort
+  rm -f "$TMP_FILE"
   ;;
 esac
